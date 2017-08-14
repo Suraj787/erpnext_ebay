@@ -1,2 +1,7 @@
-# erpnext_ebay
-Syncing erpnext with ebay
+## Erpnext Ebay
+
+Ebay connector for ERPNext
+
+#### License
+
+MIT
