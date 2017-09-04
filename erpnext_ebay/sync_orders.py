@@ -15,8 +15,10 @@ from vlog import vwrite
 # from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note, make_sales_invoice
 
 ebay_settings = frappe.get_doc("Ebay Settings", "Ebay Settings")
-if not ebay_settings.last_sync_datetime:
-    startTime = ebay_settings.last_sync_datetime
+if ebay_settings.last_sync_datetime:
+    startTimeString = ebay_settings.last_sync_datetime
+    startTimeObj = datetime.strptime(startTimeString, '%Y-%m-%d %H:%M:%S')
+    startTime = startTimeObj.isoformat()
 else:
     startTime = (datetime.now() + timedelta(-5)).isoformat()
 endTime = datetime.now().isoformat()
@@ -85,8 +87,12 @@ def sync_ebay_orders():
                                          request_data=ebay_order, exception=True)
             else:
                 vwrite("Not valid customer and product")
-        # else:
-        #     vwrite("Item is not in sync")
+        else:
+            vwrite("Item is not in sync")
+            vwrite(ebay_order)
+            make_ebay_log(title="Item not in sync with ebaytwo", status="Error", method=frappe.local.form_dict.cmd,
+                             message="Sales order item is not in sync with erp. Sales Order: %s " % ebay_order.get(
+                                 "OrderID"))
 
 
 def sync_cancelled_ebay_orders():
