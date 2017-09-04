@@ -25,10 +25,10 @@ def sync_ebay_resources():
             validate_ebay_settings(ebay_settings)
             frappe.local.form_dict.count_dict = {}
             vwrite("Now actual sync process starts")
-            sync_products(ebay_settings.price_list, ebay_settings.warehouse)
+            # sync_products(ebay_settings.price_list, ebay_settings.warehouse)
             vwrite("sync_products end")
             vwrite("sync_orders start")
-            # sync_orders()
+            sync_orders()
             vwrite("sync_orders end")
             frappe.db.set_value("Ebay Settings", None, "last_sync_datetime", now_time)
 

@@ -236,7 +236,7 @@ def sync_item_with_ebay(item, price_list, warehouse):
             "Title":item.get("item_name"),
             "Description":item.get("description"),
             "PrimaryCategory":{
-                "CategoryID":get_ebay_category_id_of_item(item)
+                #"CategoryID":get_ebay_category_id_of_item(item)
             },
             "StartPrice":item.get("standard_rate"),
             # "CategoryMappingAllowed":"true",

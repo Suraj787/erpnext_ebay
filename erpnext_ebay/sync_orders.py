@@ -18,13 +18,15 @@ ebay_settings = frappe.get_doc("Ebay Settings", "Ebay Settings")
 if not ebay_settings.last_sync_datetime:
     startTime = ebay_settings.last_sync_datetime
 else:
-    startTime = (datetime.now() + timedelta(-120)).isoformat()
+    startTime = (datetime.now() + timedelta(-5)).isoformat()
 endTime = datetime.now().isoformat()
 
 def sync_orders():
-    # sync_ebay_orders()
-    sync_cancelled_ebay_orders()
+    vwrite("27-1")
+    sync_ebay_orders()
+    # sync_cancelled_ebay_orders()
 def get_ebay_orders(ignore_filter_conditions=False):
+    vwrite("27-3")
     ebay_orders = []
     params = {'CreateTimeFrom': startTime, 'CreateTimeTo': endTime, 'OrderStatus': 'Completed'}
     orders = get_request('GetOrders', 'trading', params)
@@ -40,25 +42,52 @@ def get_cancelled_ebay_orders(ignore_filter_conditions=False):
         cancelled_ebay_orders = orders.get("OrderArray").get("Order")
     return cancelled_ebay_orders
 
+def check_ebay_sync_flag_for_item(ebay_product_id):
+    vwrite("27-6")
+    sync_flag = False
+    sync_flag_query = """select sync_with_ebay from tabItem where ebay_product_id='%s'""" % ebay_product_id
+    for item in frappe.db.sql(sync_flag_query, as_dict=1):
+        if item.get("sync_with_ebay"):
+            sync_flag = True
+        else:
+            sync_flag = False
+    return sync_flag
 def sync_ebay_orders():
+    vwrite("27-2")
     frappe.local.form_dict.count_dict["orders"] = 0
-    for ebay_order in get_ebay_orders():
-        vwrite(ebay_order)
-        if valid_customer_and_product(ebay_order):
-            try:
-                create_order(ebay_order, ebay_settings)
-                frappe.local.form_dict.count_dict["orders"] += 1
+    get_ebay_orders_array = get_ebay_orders()
+    vwrite("27-4")
+    vwrite("length: %s" % len(get_ebay_orders_array))
+    for ebay_order in get_ebay_orders_array:
+        vwrite("27-5")
+        ebay_item_id = ebay_order.get("TransactionArray").get("Transaction")[0].get("Item").get("ItemID")
+        is_item_in_sync = check_ebay_sync_flag_for_item(ebay_item_id)
+        vwrite("27-7")
+        if (ebay_item_id == '182695238775'):
+            vwrite("For %s is_item_in_sync value is : %s " % (ebay_item_id, is_item_in_sync))
+        if(is_item_in_sync):
+            vwrite("Item in sync. Creating sales order")
+            if valid_customer_and_product(ebay_order):
+                try:
+                    vwrite("27-9")
+                    create_order(ebay_order, ebay_settings)
+                    frappe.local.form_dict.count_dict["orders"] += 1
 
-            except EbayError, e:
-                make_ebay_log(status="Error", method="sync_ebay_orders", message=frappe.get_traceback(),
-                                 request_data=ebay_order, exception=True)
-            except Exception, e:
-                if e.args and e.args[0] and e.args[0].startswith("402"):
-                    raise e
-                else:
-                    make_ebay_log(title=e.message, status="Error", method="sync_ebay_orders",
-                                     message=frappe.get_traceback(),
+                except EbayError, e:
+                    make_ebay_log(status="Error", method="sync_ebay_orders", message=frappe.get_traceback(),
                                      request_data=ebay_order, exception=True)
+                except Exception, e:
+                    if e.args and e.args[0] and e.args[0].startswith("402"):
+                        raise e
+                    else:
+                        make_ebay_log(title=e.message, status="Error", method="sync_ebay_orders",
+                                         message=frappe.get_traceback(),
+                                         request_data=ebay_order, exception=True)
+            else:
+                vwrite("Not valid customer and product")
+        # else:
+        #     vwrite("Item is not in sync")
+
 
 def sync_cancelled_ebay_orders():
     frappe.local.form_dict.count_dict["orders"] = 0
@@ -66,6 +95,7 @@ def sync_cancelled_ebay_orders():
         vwrite(cancelled_ebay_order)
     vwrite("Cancelled orders end")
 def valid_customer_and_product(ebay_order):
+    vwrite("27-8")
     customer_id = ebay_order.get("BuyerUserID")
     if customer_id:
         if not frappe.db.get_value("Customer", {"ebay_customer_id": customer_id}, "name"):
@@ -84,6 +114,7 @@ def valid_customer_and_product(ebay_order):
 
 
 def create_order(ebay_order, ebay_settings, company=None):
+    vwrite("27-10")
     so = create_sales_order(ebay_order, ebay_settings, company)
     # if ebay_order.get("financial_status") == "paid" and cint(ebay_settings.sync_sales_invoice):
     #     create_sales_invoice(ebay_order, ebay_settings, so)
@@ -93,58 +124,83 @@ def create_order(ebay_order, ebay_settings, company=None):
 
 
 def create_sales_order(ebay_order, ebay_settings, company=None):
+    vwrite("27-11")
     so = frappe.db.get_value("Sales Order", {"ebay_order_id": ebay_order.get("OrderID")}, "name")
 
     if not so:
+        vwrite("27-12")
         transaction_date = datetime.strptime(nowdate(), "%Y-%m-%d")
         delivery_date = transaction_date + timedelta(days=4)
         # get oldest serial number and update in tabSales Order
         serial_number = get_oldest_serial_number(ebay_order.get("TransactionArray").get("Transaction")[0].get("Item").get("ItemID")) # sending ebay_product_id
         vwrite("check here")
         vwrite(serial_number)
-        so = frappe.get_doc({
-            "doctype": "Sales Order",
-            "naming_series": ebay_settings.sales_order_series or "SO-Ebay-",
-            "ebay_order_id": ebay_order.get("OrderID"),
-            "customer": frappe.db.get_value("Customer",
-                                            {"ebay_customer_id": ebay_order.get("BuyerUserID")}, "name"),
-            "delivery_date": delivery_date,
-            "transaction_date":ebay_order.get("TransactionArray").get("Transaction")[0].get("CreatedDate"),
-            "company": ebay_settings.company,
-            "selling_price_list": ebay_settings.price_list,
-            "ignore_pricing_rule": 1,
-            "items": get_order_items(ebay_order.get("TransactionArray").get("Transaction"), ebay_settings),
-            "item_serial_no":serial_number
-            # "taxes": get_order_taxes(ebay_order.get("TransactionArray").get("Transaction"), ebay_settings),
-            # "apply_discount_on": "Grand Total",
-            # "discount_amount": get_discounted_amount(ebay_order),
-        })
-        if company:
-            so.update({
-                "company": company,
-                "status": "Draft"
+        try:
+            vwrite("27-13")
+            so = frappe.get_doc({
+                "doctype": "Sales Order",
+                "naming_series": ebay_settings.sales_order_series or "SO-Ebay-",
+                "ebay_order_id": ebay_order.get("OrderID"),
+                "customer": frappe.db.get_value("Customer",
+                                                {"ebay_customer_id": ebay_order.get("BuyerUserID")}, "name"),
+                "delivery_date": delivery_date,
+                "transaction_date": ebay_order.get("TransactionArray").get("Transaction")[0].get("CreatedDate"),
+                "company": ebay_settings.company,
+                "selling_price_list": ebay_settings.price_list,
+                "ignore_pricing_rule": 1,
+                "items": get_order_items(ebay_order.get("TransactionArray").get("Transaction"), ebay_settings),
+                "item_serial_no": serial_number
+                # "taxes": get_order_taxes(ebay_order.get("TransactionArray").get("Transaction"), ebay_settings),
+                # "apply_discount_on": "Grand Total",
+                # "discount_amount": get_discounted_amount(ebay_order),
             })
-        so.flags.ignore_mandatory = True
-        so.save(ignore_permissions=True)
-        so.submit()
-
+            vwrite("27-14")
+            if company:
+                vwrite("27-15")
+                so.update({
+                    "company": company,
+                    "status": "Draft"
+                })
+                vwrite("27-16")
+            vwrite("27-17")
+            so.flags.ignore_mandatory = True
+            vwrite("27-18")
+            so.save(ignore_permissions=True)
+            vwrite("27-19")
+            so.submit()
+            vwrite("27-20")
+        except EbayError, e:
+            make_ebay_log(status="Error", method="sync_ebay_orders", message=frappe.get_traceback(),
+                          request_data=ebay_order, exception=True)
+        except Exception, e:
+            if e.args and e.args[0] and e.args[0].startswith("402"):
+                raise e
+            else:
+                make_ebay_log(title=e.message, status="Error", method="sync_ebay_orders",
+                              message=frappe.get_traceback(),
+                              request_data=ebay_order, exception=True)
     else:
+        vwrite("27-21")
+        vwrite("Updating sales order")
         so = frappe.get_doc("Sales Order", so)
+        vwrite("27-22")
+    vwrite("27-23")
     frappe.db.commit()
+    vwrite("27-24")
     return so
 
 
-def create_sales_invoice(shopify_order, shopify_settings, so):
-    if not frappe.db.get_value("Sales Invoice", {"shopify_order_id": shopify_order.get("id")}, "name") \
-            and so.docstatus == 1 and not so.per_billed:
-        si = make_sales_invoice(so.name)
-        si.shopify_order_id = shopify_order.get("id")
-        si.naming_series = shopify_settings.sales_invoice_series or "SI-Shopify-"
-        si.flags.ignore_mandatory = True
-        set_cost_center(si.items, shopify_settings.cost_center)
-        si.submit()
-        make_payament_entry_against_sales_invoice(si, shopify_settings)
-        frappe.db.commit()
+# def create_sales_invoice(shopify_order, shopify_settings, so):
+#     if not frappe.db.get_value("Sales Invoice", {"shopify_order_id": shopify_order.get("id")}, "name") \
+#             and so.docstatus == 1 and not so.per_billed:
+#         si = make_sales_invoice(so.name)
+#         si.shopify_order_id = shopify_order.get("id")
+#         si.naming_series = shopify_settings.sales_invoice_series or "SI-Shopify-"
+#         si.flags.ignore_mandatory = True
+#         set_cost_center(si.items, shopify_settings.cost_center)
+#         si.submit()
+#         make_payament_entry_against_sales_invoice(si, shopify_settings)
+#         frappe.db.commit()
 
 
 def set_cost_center(items, cost_center):

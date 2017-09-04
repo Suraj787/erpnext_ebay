@@ -64,11 +64,12 @@ def create_customer_address(ebay_order, ebay_customer):
 			"pincode": ebay_order.get("ShippingAddress").get("PostalCode"),
 			"country": ebay_order.get("ShippingAddress").get("Country"),
 			"phone": ebay_order.get("ShippingAddress").get("Phone"),
-			"email_id": ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email")
-			# "links": [{
-			# 	"link_doctype": "Customer",
-			# 	"link_name": ebay_order.get("BuyerUserID")
-			# }]
+			"email_id": ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
+			"links": [{
+				"link_doctype": "Customer",
+				# "link_name": ebay_order.get("BuyerUserID")
+				"link_name": ebay_order.get("ShippingAddress").get("Name")
+			}]
 		}
 	vwrite(test)
 	try :
@@ -85,11 +86,12 @@ def create_customer_address(ebay_order, ebay_customer):
 			# "country": ebay_order.get("ShippingAddress").get("Country"),
 			"country": None,
 			"phone": ebay_order.get("ShippingAddress").get("Phone"),
-			"email_id": ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email")
-			# "links": [{
-			# 	"link_doctype": "Customer",
-			# 	"link_name": ebay_order.get("BuyerUserID")
-			# }]
+			"email_id": ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
+			"links": [{
+				"link_doctype": "Customer",
+				# "link_name": ebay_order.get("BuyerUserID")
+				"link_name": ebay_order.get("ShippingAddress").get("Name")
+			}]
 		}).insert()
 
 	except Exception, e:
