@@ -90,7 +90,7 @@ def sync_ebay_orders():
         else:
             vwrite("Item is not in sync")
             vwrite(ebay_order)
-            make_ebay_log(title="Item not in sync with ebaytwo", status="Error", method=frappe.local.form_dict.cmd,
+            make_ebay_log(title="Item not in sync with ebay", status="Error", method=frappe.local.form_dict.cmd,
                              message="Sales order item is not in sync with erp. Sales Order: %s " % ebay_order.get(
                                  "OrderID"))
 
