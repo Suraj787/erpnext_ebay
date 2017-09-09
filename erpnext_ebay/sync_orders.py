@@ -17,6 +17,7 @@ from vlog import vwrite
 ebay_settings = frappe.get_doc("Ebay Settings", "Ebay Settings")
 if ebay_settings.last_sync_datetime:
     startTimeString = ebay_settings.last_sync_datetime
+    startTimeString = startTimeString[:19]
     startTimeObj = datetime.strptime(startTimeString, '%Y-%m-%d %H:%M:%S')
     startTime = startTimeObj.isoformat()
 else:
