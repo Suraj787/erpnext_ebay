@@ -148,6 +148,7 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
                 "doctype": "Sales Order",
                 "naming_series": ebay_settings.sales_order_series or "SO-Ebay-",
                 "ebay_order_id": ebay_order.get("OrderID"),
+		"ebay_buyer_id": ebay_order.get("BuyerUserID"),
                 "customer": frappe.db.get_value("Customer",
                                                 {"ebay_customer_id": ebay_order.get("BuyerUserID")}, "name"),
                 "delivery_date": delivery_date,
