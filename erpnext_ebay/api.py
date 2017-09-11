@@ -3,7 +3,7 @@ import frappe
 from frappe import _
 from .exceptions import EbayError
 from .sync_products import sync_products
-from .sync_orders import sync_orders
+from .sync_orders import sync_orders,update_paisapay_id
 from .utils import disable_ebay_sync_on_exception, make_ebay_log
 from frappe.utils.background_jobs import enqueue
 from erpnext_ebay.vlog import vwrite
@@ -29,6 +29,7 @@ def sync_ebay_resources():
             vwrite("sync_products end")
             vwrite("sync_orders start")
             sync_orders()
+            update_paisapay_id()
             vwrite("sync_orders end")
             frappe.db.set_value("Ebay Settings", None, "last_sync_datetime", now_time)
 
