@@ -175,7 +175,7 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
             vwrite("27-18")
             so.save(ignore_permissions=True)
             vwrite("27-19")
-            so.submit()
+            # so.submit()
             vwrite("27-20")
         except EbayError, e:
             make_ebay_log(status="Error", method="sync_ebay_orders", message=frappe.get_traceback(),
@@ -314,3 +314,24 @@ def get_tax_account_head(tax):
         frappe.throw("Tax Account not specified for Ebay Tax {}".format(tax.get("title")))
 
     return tax_account
+###################
+# PAISA PAY ID SYNC
+###################
+def update_paisapay_id():
+    params = {'SoldList': {'DurationInDays': 5, 'Include': True, 'OrderStatusFilter': 'All'}}
+    orders = get_request('GetMyeBaySelling', 'trading', params)
+    for orderTransaction in orders.get("SoldList").get("OrderTransactionArray").get("OrderTransaction"):
+        PaisaPayID = orderTransaction.get("Transaction").get("PaisaPayID")
+        OrderLineItemID = orderTransaction.get("Transaction").get("OrderLineItemID")
+        vwrite("PaisaPayID: %s; OrderLineItemID: %s" % (PaisaPayID, OrderLineItemID))
+        so = frappe.db.get_value("Sales Order", {"ebay_order_id": OrderLineItemID})
+        vwrite(so)
+        if so:
+            so = frappe.get_doc("Sales Order", {"ebay_order_id": OrderLineItemID})
+            so.ebay_paisapay_id = PaisaPayID
+            so.flags.ignore_mandatory = True
+            so.save(ignore_permissions=True)
+            so.submit()
+            frappe.db.commit()
+
+    return "OK"
