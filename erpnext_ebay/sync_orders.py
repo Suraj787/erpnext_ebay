@@ -326,7 +326,7 @@ def update_paisapay_id():
         vwrite("PaisaPayID: %s; OrderLineItemID: %s" % (PaisaPayID, OrderLineItemID))
         so = frappe.db.get_value("Sales Order", {"ebay_order_id": OrderLineItemID})
         vwrite(so)
-        if so:
+        if so and so.get("status") == "Draft":
             so = frappe.get_doc("Sales Order", {"ebay_order_id": OrderLineItemID})
             so.ebay_paisapay_id = PaisaPayID
             so.flags.ignore_mandatory = True
