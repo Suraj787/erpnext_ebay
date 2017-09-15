@@ -331,7 +331,7 @@ def update_paisapay_id():
             so.ebay_paisapay_id = PaisaPayID
             so.flags.ignore_mandatory = True
             so.save(ignore_permissions=True)
-            so.submit()
+            #so.submit()
             frappe.db.commit()
 
     return "OK"

@@ -256,7 +256,7 @@
   "dt": "Sales Order",
   "fieldname": "ebay_paisapay_id",
   "fieldtype": "Data",
-  "hidden": 0,
+  "hidden": 1,
   "ignore_user_permissions": 0,
   "ignore_xss_filter": 0,
   "in_filter": 0,
