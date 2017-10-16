@@ -7,7 +7,7 @@ from .utils import make_ebay_log
 import frappe
 from frappe import _
 # from .sync_products import make_item
-from .sync_customers import create_customer
+from .sync_customers import create_customer,create_customer_address
 from frappe.utils import flt, nowdate, cint
 from .ebay_item_common_functions import get_oldest_serial_number
 from .ebay_requests import get_request, get_filtering_condition
@@ -107,6 +107,9 @@ def valid_customer_and_product(ebay_order):
     if customer_id:
         if not frappe.db.get_value("Customer", {"ebay_customer_id": customer_id}, "name"):
             create_customer(ebay_order, ebay_customer_list=[])
+        else:
+            create_customer_address(ebay_order, customer_id)
+
     else:
         raise _("Customer is mandatory to create order")
 

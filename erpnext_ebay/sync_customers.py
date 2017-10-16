@@ -73,32 +73,55 @@ def create_customer_address(ebay_order, ebay_customer):
 		}
 	vwrite(test)
 	try :
-		frappe.get_doc({
-			"doctype": "Address",
-			"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID"),
-			"address_title": ebay_order.get("ShippingAddress").get("Name"),
-			"address_type": "Shipping",
-			"address_line1": ebay_order.get("ShippingAddress").get("Street1"),
-			"address_line2": ebay_order.get("ShippingAddress").get("Street2"),
-			"city": ebay_order.get("ShippingAddress").get("CityName"),
-			"state": ebay_order.get("ShippingAddress").get("PB"),
-			"pincode": ebay_order.get("ShippingAddress").get("PostalCode"),
-			# "country": ebay_order.get("ShippingAddress").get("Country"),
-			"country": None,
-			"phone": ebay_order.get("ShippingAddress").get("Phone"),
-			"email_id": ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
-			"links": [{
-				"link_doctype": "Customer",
-				# "link_name": ebay_order.get("BuyerUserID")
-				"link_name": ebay_order.get("ShippingAddress").get("Name")
-			}]
-		}).insert()
+		if not frappe.db.get_value("Address", {"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID")}, "name"):
+			frappe.get_doc({
+				"doctype": "Address",
+				"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID"),
+				"address_title": ebay_order.get("ShippingAddress").get("Name"),
+				"address_type": "Shipping",
+				"address_line1": ebay_order.get("ShippingAddress").get("Street1"),
+				"address_line2": ebay_order.get("ShippingAddress").get("Street2"),
+				"city": ebay_order.get("ShippingAddress").get("CityName"),
+				"state": ebay_order.get("ShippingAddress").get("PB"),
+				"pincode": ebay_order.get("ShippingAddress").get("PostalCode"),
+				# "country": ebay_order.get("ShippingAddress").get("Country"),
+				"country": None,
+				"phone": ebay_order.get("ShippingAddress").get("Phone"),
+				"email_id": ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
+				"links": [{
+					"link_doctype": "Customer",
+					# "link_name": ebay_order.get("BuyerUserID")
+					"link_name": ebay_order.get("ShippingAddress").get("Name")
+				}]
+			}).insert()
+		else:
+			frappe.get_doc({
+				"doctype": "Address",
+				"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID"),
+				"address_title": ebay_order.get("ShippingAddress").get("Name"),
+				"address_type": "Shipping",
+				"address_line1": ebay_order.get("ShippingAddress").get("Street1"),
+				"address_line2": ebay_order.get("ShippingAddress").get("Street2"),
+				"city": ebay_order.get("ShippingAddress").get("CityName"),
+				"state": ebay_order.get("ShippingAddress").get("PB"),
+				"pincode": ebay_order.get("ShippingAddress").get("PostalCode"),
+				# "country": ebay_order.get("ShippingAddress").get("Country"),
+				"country": None,
+				"phone": ebay_order.get("ShippingAddress").get("Phone"),
+				"email_id": ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
+				"links": [{
+					"link_doctype": "Customer",
+					# "link_name": ebay_order.get("BuyerUserID")
+					"link_name": ebay_order.get("ShippingAddress").get("Name")
+				}]
+			}).save()
 
 	except Exception, e:
 		vwrite('exception occurred')
 		make_ebay_log(title=e.message, status="Error", method="create_customer_address", message=frappe.get_traceback(),
 			request_data=ebay_customer, exception=True)
-		
+
+
 def get_address_title_and_type(customer_name, index):
 	address_type = _("Billing")
 	address_title = customer_name
