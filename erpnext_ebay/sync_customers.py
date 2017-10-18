@@ -39,9 +39,10 @@ def create_customer(ebay_order, ebay_customer_list):
 		vwrite(test)
 		if customer:
 			create_customer_address(ebay_order, cust_id)
-	
+			create_customer_contact(ebay_order, cust_id)
 		ebay_customer_list.append(ebay_order.get("BuyerUserID"))
 		frappe.db.commit()
+
 			
 	except Exception, e:
 		if e.args[0] and e.args[0].startswith("402"):
@@ -52,26 +53,6 @@ def create_customer(ebay_order, ebay_customer_list):
 		
 def create_customer_address(ebay_order, ebay_customer):
 	vwrite('in create_customer_address')
-	test = {
-			"doctype": "Address",
-			"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID"),
-			"address_title": ebay_order.get("ShippingAddress").get("Name"),
-			"address_type": "",
-			"address_line1": ebay_order.get("ShippingAddress").get("Street1"),
-			"address_line2": ebay_order.get("ShippingAddress").get("Street2"),
-			"city": ebay_order.get("ShippingAddress").get("CityName"),
-			"state": ebay_order.get("ShippingAddress").get("PB"),
-			"pincode": ebay_order.get("ShippingAddress").get("PostalCode"),
-			"country": ebay_order.get("ShippingAddress").get("Country"),
-			"phone": ebay_order.get("ShippingAddress").get("Phone"),
-			"email_id": ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
-			"links": [{
-				"link_doctype": "Customer",
-				# "link_name": ebay_order.get("BuyerUserID")
-				"link_name": ebay_order.get("ShippingAddress").get("Name")
-			}]
-		}
-	vwrite(test)
 	try :
 		if not frappe.db.get_value("Address", {"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID")}, "name"):
 			frappe.get_doc({
@@ -121,6 +102,37 @@ def create_customer_address(ebay_order, ebay_customer):
 		make_ebay_log(title=e.message, status="Error", method="create_customer_address", message=frappe.get_traceback(),
 			request_data=ebay_customer, exception=True)
 
+# create_customer_contact() will create customer contact in tabContact which is used in sending email
+# to customer after creation of sales order. Stores firstname,lastname,emailID in tabContact
+def create_customer_contact(ebay_order, ebay_customer):
+	cust_name = ebay_order.get("ShippingAddress").get("Name")
+	email_id = ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email")
+	try :
+		if not frappe.db.get_value("Contact", {"first_name": ebay_customer}, "name"):
+			frappe.get_doc({
+				"doctype": "Contact",
+				"first_name": ebay_customer,
+				"email_id": email_id,
+				"links": [{
+					"link_doctype": "Customer",
+					# "link_name": ebay_order.get("BuyerUserID")
+					"link_name": cust_name
+				}]
+			}).insert()
+		# else:
+		# 	frappe.get_doc({
+		# 		"doctype": "Contact",
+		# 		"first_name": ebay_customer,
+		# 		"email_id": email_id,
+		# 		"links": [{
+		# 			"link_doctype": "Customer",
+		# 			# "link_name": ebay_order.get("BuyerUserID")
+		# 			"link_name": ebay_order.get("ShippingAddress").get("Name")
+		# 		}]
+		# 	}).save()
+	except Exception, e:
+		make_ebay_log(title=e.message, status="Error", method="create_customer_contact", message=frappe.get_traceback(),
+			request_data=ebay_order, exception=True)
 
 def get_address_title_and_type(customer_name, index):
 	address_type = _("Billing")
