@@ -19,7 +19,7 @@ if ebay_settings.last_sync_datetime:
     startTimeString = ebay_settings.last_sync_datetime
     startTimeString = startTimeString[:19]
     startTimeObj = datetime.strptime(startTimeString, '%Y-%m-%d %H:%M:%S')
-    startTime = startTimeObj.isoformat()
+    startTime = (startTimeObj + timedelta(-5)).isoformat()
 else:
     startTime = (datetime.now() + timedelta(-5)).isoformat()
 endTime = datetime.now().isoformat()
