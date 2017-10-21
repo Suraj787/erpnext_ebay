@@ -29,7 +29,7 @@ def sync_ebay_resources():
             vwrite("sync_products end")
             vwrite("sync_orders start")
             sync_orders()
-            update_paisapay_id()
+            # update_paisapay_id()
             vwrite("sync_orders end")
             frappe.db.set_value("Ebay Settings", None, "last_sync_datetime", now_time)
 
