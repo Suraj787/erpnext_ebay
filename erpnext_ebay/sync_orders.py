@@ -253,7 +253,6 @@ def get_variant_item_code(ebay_item):
     item_code = item.get("item_code")
     variant_items_query = """ select item_code from `tabItem` where variant_of='%s'""" % (item_code)
     variant_items_result = frappe.db.sql(variant_items_query, as_dict=1)
-
     variation_specifics = ebay_item.get("Variation").get("VariationSpecifics").get("NameValueList")
     for variant_item in variant_items_result:
         # get records from tabItemVariantAttributes where parent=variant_item
@@ -264,10 +263,11 @@ def get_variant_item_code(ebay_item):
             matched = 0
             for variation_specific in variation_specifics:
                 for variant_attributes_row in variant_attributes_result:
-                    if((variant_attributes_row.get("attribute")==variation_specific.get("Name")) and (variant_attributes_row.get("attribute_value")==variation_specific.get("Value"))):
+                    if((variant_attributes_row.get("attribute").lower()==variation_specific.get("Name").lower()) and (variant_attributes_row.get("attribute_value").lower()==variation_specific.get("Value").lower())):
                         matched = matched+1
                     if len(variation_specifics)==matched:
                         return variant_item.get("item_code")
+
     return None
 
 def get_order_taxes(ebay_order, ebay_settings):
