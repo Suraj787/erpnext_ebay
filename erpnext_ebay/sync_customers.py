@@ -76,26 +76,16 @@ def create_customer_address(ebay_order, ebay_customer):
 				}]
 			}).insert()
 		else:
-			frappe.get_doc({
-				"doctype": "Address",
-				"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID"),
-				"address_title": ebay_order.get("ShippingAddress").get("Name"),
-				"address_type": "Shipping",
-				"address_line1": ebay_order.get("ShippingAddress").get("Street1"),
-				"address_line2": ebay_order.get("ShippingAddress").get("Street2"),
-				"city": ebay_order.get("ShippingAddress").get("CityName"),
-				"state": ebay_order.get("ShippingAddress").get("PB"),
-				"pincode": ebay_order.get("ShippingAddress").get("PostalCode"),
-				# "country": ebay_order.get("ShippingAddress").get("Country"),
-				"country": None,
-				"phone": ebay_order.get("ShippingAddress").get("Phone"),
-				"email_id": ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
-				"links": [{
-					"link_doctype": "Customer",
-					# "link_name": ebay_order.get("BuyerUserID")
-					"link_name": ebay_order.get("ShippingAddress").get("Name")
-				}]
-			}).save()
+			frappe.db.sql(
+				"""update tabAddress set address_title='%s',address_type='Shipping',address_line1='%s',address_line2='%s',city='%s',state='%s',pincode='%s',country='%s',phone='%s',email_id='%s' where ebay_address_id='%s' """
+				% (ebay_order.get("ShippingAddress").get("Name"), ebay_order.get("ShippingAddress").get("Street1"),
+				   ebay_order.get("ShippingAddress").get("Street2"), ebay_order.get("ShippingAddress").get("CityName"),
+				   ebay_order.get("ShippingAddress").get("PB"), ebay_order.get("ShippingAddress").get("PostalCode"),
+				   ebay_order.get("ShippingAddress").get("CountryName"),
+				   ebay_order.get("ShippingAddress").get("Phone"),
+				   ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
+				   ebay_order.get("ShippingAddress").get("AddressID")))
+			frappe.db.commit()
 
 	except Exception, e:
 		vwrite('exception occurred')
