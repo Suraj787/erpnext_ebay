@@ -65,19 +65,19 @@ def sync_ebay_orders():
 
                 except EbayError, e:
                     make_ebay_log(status="Error", method="sync_ebay_orders", message=frappe.get_traceback(),
-                                     request_data=ebay_order, exception=True)
+                                     request_data=ebay_order.get("OrderID"), exception=True)
                 except Exception, e:
                     if e.args and e.args[0] and e.args[0].startswith("402"):
                         raise e
                     else:
                         make_ebay_log(title=e.message, status="Error", method="sync_ebay_orders",
                                          message=frappe.get_traceback(),
-                                         request_data=ebay_order, exception=True)
+                                         request_data=ebay_order.get("OrderID"), exception=True)
             else:
                 vwrite("Not valid customer and product")
         else:
-            make_ebay_log(title="%s" % ebay_order.get("TransactionArray").get("Transaction")[0].get("Item").get("Title"), status="Error", method=frappe.local.form_dict.cmd,
-                             message="Sales order item is not in sync with erp. Sales Order: %s " % ebay_order.get(
+            make_ebay_log(title="%s" % ebay_order.get("TransactionArray").get("Transaction")[0].get("Item").get("Title"), status="Error", method="sync_ebay_orders",
+                             request_data=ebay_order.get("OrderID"),message="Sales order item is not in sync with erp. Sales Order: %s " % ebay_order.get(
                                  "OrderID"))
 
 
@@ -152,15 +152,15 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
             so.save(ignore_permissions=True)
             # so.submit()
         except EbayError, e:
-            make_ebay_log(status="Error", method="sync_ebay_orders", message=frappe.get_traceback(),
-                          request_data=ebay_order, exception=True)
+            make_ebay_log(title=e.message, status="Error", method="create_sales_order", message=frappe.get_traceback(),
+                          request_data=ebay_order.get("OrderID"), exception=True)
         except Exception, e:
             if e.args and e.args[0] and e.args[0].startswith("402"):
                 raise e
             else:
-                make_ebay_log(title=e.message, status="Error", method="sync_ebay_orders",
+                make_ebay_log(title=e.message, status="Error", method="create_sales_order",
                               message=frappe.get_traceback(),
-                              request_data=ebay_order, exception=True)
+                              request_data=ebay_order.get("OrderID"), exception=True)
     else:
         so = frappe.get_doc("Sales Order", so)
     frappe.db.commit()
@@ -227,7 +227,7 @@ def get_order_items(order_items, ebay_settings):
             item_code = get_variant_item_code(ebay_item)
             if item_code == None:
                 make_ebay_log(title="Variant Item not found", status="Error", method="get_order_items",
-                              message="Variant Item not found for %s" %(ebay_item.get("Item").get("ItemID")),request_data=order_items)
+                              message="Variant Item not found for %s" %(ebay_item.get("Item").get("ItemID")),request_data=ebay_item.get("Item").get("ItemID"))
         else:
             item_code = get_item_code(ebay_item)
         items.append({

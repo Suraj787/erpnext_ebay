@@ -49,7 +49,7 @@ def create_customer(ebay_order, ebay_customer_list):
 			raise e
 		else:
 			make_ebay_log(title=e.message, status="Error", method="create_customer", message=frappe.get_traceback(),
-				request_data=ebay_order, exception=True)
+				request_data=ebay_order.get("BuyerUserID"), exception=True)
 		
 def create_customer_address(ebay_order, ebay_customer):
 	vwrite('in create_customer_address')
@@ -122,7 +122,7 @@ def create_customer_contact(ebay_order, ebay_customer):
 		# 	}).save()
 	except Exception, e:
 		make_ebay_log(title=e.message, status="Error", method="create_customer_contact", message=frappe.get_traceback(),
-			request_data=ebay_order, exception=True)
+			request_data=email_id, exception=True)
 
 def get_address_title_and_type(customer_name, index):
 	address_type = _("Billing")
