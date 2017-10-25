@@ -21,21 +21,18 @@ def disable_ebay_sync_on_exception():
 
 def make_ebay_log(title="Sync Log", status="Queued", method="sync_ebay", message=None, exception=False,
                      name=None, request_data={}):
-    ebaydebug("DEBUG START ==>")
-    ebaydebug("title: %s, status: %s, method: %s, message: %s, exception: %s, name: %s, request_data: %s" %(title, status, method, message, exception,name, request_data))
+    # ebaydebug("DEBUG START ==>")
+    # ebaydebug("title: %s, status: %s, method: %s, message: %s, exception: %s, name: %s, request_data: %s" %(title, status, method, message, exception,name, request_data))
     make_log_flag = True
     # log_message = message if message else frappe.get_traceback()
     # log_query = """select name from `tabEbay Log` where title = '%s' and message='%s' and method='%s' and status='%s' and request_data='%s'""" %(title[0:140],log_message,method,status,json.dumps(request_data))
     log_query = """select name from `tabEbay Log` where title = '%s' and method='%s' and request_data='%s'""" % (
-    title[0:140], method, json.dumps(request_data))
-    ebaydebug(log_query)
+    title[0:140].replace("'","''"), method, json.dumps(request_data))
+    # ebaydebug(log_query)
     if status!="Queued":
-        ebaydebug('In if status!=queued')
-        for log in frappe.db.sql(log_query, as_dict=1):
-            ebaydebug('in log - has records and so making make_log_flag false')
+        if len(frappe.db.sql(log_query, as_dict=1)) > 0:
             make_log_flag = False
     if make_log_flag:
-        ebaydebug('make_log_flag is true')
         if not name:
             name = frappe.db.get_value("Ebay Log", {"status": "Queued"})
 
@@ -59,4 +56,4 @@ def make_ebay_log(title="Sync Log", status="Queued", method="sync_ebay", message
 
             log.save(ignore_permissions=True)
             frappe.db.commit()
-    ebaydebug("DEBUG END <==")
+    # ebaydebug("DEBUG END <==")
