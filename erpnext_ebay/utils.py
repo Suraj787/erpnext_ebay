@@ -29,7 +29,7 @@ def make_ebay_log(title="Sync Log", status="Queued", method="sync_ebay", message
     log_query = """select name from `tabEbay Log` where title = '%s' and method='%s' and request_data='%s'""" % (
     title[0:140].replace("'","''"), method, json.dumps(request_data))
     # ebaydebug(log_query)
-    if status!="Queued":
+    if status!="Queued" and title!="Sync Completed":
         if len(frappe.db.sql(log_query, as_dict=1)) > 0:
             make_log_flag = False
     if make_log_flag:

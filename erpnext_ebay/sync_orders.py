@@ -223,7 +223,8 @@ def get_discounted_amount(order):
 def get_order_items(order_items, ebay_settings):
     items = []
     for ebay_item in order_items:
-        if('Variation' in ebay_item):
+        #if('Variation' in ebay_item):
+	if False:
             item_code = get_variant_item_code(ebay_item)
             if item_code == None:
                 make_ebay_log(title="Variant Item not found", status="Error", method="get_order_items",
