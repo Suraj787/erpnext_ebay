@@ -49,7 +49,7 @@ def create_customer(ebay_order, ebay_customer_list):
 				request_data=ebay_order.get("BuyerUserID"), exception=True)
 		
 def create_customer_address(ebay_order, ebay_customer):
-	if len(ebay_order.get("ShippingAddress").get("Name")) == 0:
+	if not ebay_order.get("ShippingAddress").get("Name"):
 		make_ebay_log(title=ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"), status="Error", method="create_customer_address", message="No shipping address found for %s" % ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
 					  request_data=ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"), exception=True)
 	else:
@@ -101,7 +101,7 @@ def create_customer_address(ebay_order, ebay_customer):
 def create_customer_contact(ebay_order, ebay_customer):
 	cust_name = ebay_order.get("ShippingAddress").get("Name")
 	email_id = ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email")
-	if len(cust_name)==0:
+	if not cust_name:
 		make_ebay_log(title=email_id, status="Error", method="create_customer_contact", message="Contact not found for %s" % email_id,
 					  request_data=email_id, exception=True)
 	else:
