@@ -223,8 +223,7 @@ def get_discounted_amount(order):
 def get_order_items(order_items, ebay_settings):
     items = []
     for ebay_item in order_items:
-        #if('Variation' in ebay_item):
-	if False:
+        if('Variation' in ebay_item):
             item_code = get_variant_item_code(ebay_item)
             if item_code == None:
                 make_ebay_log(title="Variant Item not found", status="Error", method="get_order_items",
@@ -254,10 +253,15 @@ def get_variant_item_code(ebay_item):
     item_code = item.get("item_code")
     variant_items_query = """ select item_code from `tabItem` where variant_of='%s'""" % (item_code)
     variant_items_result = frappe.db.sql(variant_items_query, as_dict=1)
-    variation_specifics = ebay_item.get("Variation").get("VariationSpecifics").get("NameValueList")
+    all_variation_specifics = ebay_item.get("Variation").get("VariationSpecifics").get("NameValueList")
+    variation_specifics = []
+    for required_variation_specifics in all_variation_specifics:
+        # if required_variation_specifics.get("Name").lower()!='warranty':
+        if 'warranty' not in required_variation_specifics.get("Name").lower():
+            variation_specifics.append(required_variation_specifics)
     for variant_item in variant_items_result:
         # get records from tabItemVariantAttributes where parent=variant_item
-        variant_attributes_query = """ select * from `tabItem Variant Attribute` where parent='%s'""" % (variant_item.get("item_code"))
+        variant_attributes_query = """ select * from `tabItem Variant Attribute` where parent='%s' and attribute != 'Warranty'""" % (variant_item.get("item_code"))
         variant_attributes_result = frappe.db.sql(variant_attributes_query, as_dict=1)
         if len(variant_attributes_result)==len(variation_specifics):
             # for each variation specific, compare with result row
@@ -268,7 +272,6 @@ def get_variant_item_code(ebay_item):
                         matched = matched+1
                     if len(variation_specifics)==matched:
                         return variant_item.get("item_code")
-
     return None
 
 def get_order_taxes(ebay_order, ebay_settings):
