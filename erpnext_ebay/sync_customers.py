@@ -82,7 +82,7 @@ def create_customer_address(ebay_order, ebay_customer):
 					% (ebay_order.get("ShippingAddress").get("Name"), ebay_order.get("ShippingAddress").get("Street1"),
 					   ebay_order.get("ShippingAddress").get("Street2"),
 					   ebay_order.get("ShippingAddress").get("CityName"),
-					   ebay_order.get("ShippingAddress").get("PB"), ebay_order.get("ShippingAddress").get("PostalCode"),
+					   ebay_order.get("ShippingAddress").get("StateOrProvince"), ebay_order.get("ShippingAddress").get("PostalCode"),
 					   ebay_order.get("ShippingAddress").get("CountryName"),
 					   ebay_order.get("ShippingAddress").get("Phone"),
 					   ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
