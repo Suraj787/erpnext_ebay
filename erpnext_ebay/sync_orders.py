@@ -25,6 +25,7 @@ else:
 endTime = datetime.now().isoformat()
 
 def sync_orders():
+    vwrite("Sync start")
     sync_ebay_orders()
     # sync_cancelled_ebay_orders()
 def get_ebay_orders(ignore_filter_conditions=False):
@@ -43,13 +44,16 @@ def get_cancelled_ebay_orders(ignore_filter_conditions=False):
     return cancelled_ebay_orders
 
 def check_ebay_sync_flag_for_item(ebay_product_id):
+    vwrite("checking sync")
     sync_flag = False
-    sync_flag_query = """select sync_with_ebay from tabItem where ebay_product_id='%s'""" % ebay_product_id
+    sync_flag_query = """select sync_with_ebay from tabItem where ebay_product_id='%s' or ebay_product_id like '%s,' or ebay_product_id like ',%s,' or ebay_product_id like ',%s'""" % (ebay_product_id,ebay_product_id,ebay_product_id,ebay_product_id)
+    vwrite(sync_flag_query)
     for item in frappe.db.sql(sync_flag_query, as_dict=1):
         if item.get("sync_with_ebay"):
             sync_flag = True
         else:
             sync_flag = False
+    vwrite("returning %s" % sync_flag)
     return sync_flag
 def sync_ebay_orders():
     frappe.local.form_dict.count_dict["orders"] = 0
@@ -118,7 +122,6 @@ def create_order(ebay_order, ebay_settings, company=None):
 
 def create_sales_order(ebay_order, ebay_settings, company=None):
     so = frappe.db.get_value("Sales Order", {"ebay_order_id": ebay_order.get("OrderID")}, "name")
-
     if not so:
         transaction_date = datetime.strptime(nowdate(), "%Y-%m-%d")
         delivery_date = transaction_date + timedelta(days=4)
@@ -221,6 +224,7 @@ def get_discounted_amount(order):
 
 
 def get_order_items(order_items, ebay_settings):
+    vwrite("in get_order_items")
     items = []
     for ebay_item in order_items:
         if('Variation' in ebay_item):
@@ -230,6 +234,9 @@ def get_order_items(order_items, ebay_settings):
                               message="Variant Item not found for %s" %(ebay_item.get("Item").get("ItemID")),request_data=ebay_item.get("Item").get("ItemID"))
         else:
             item_code = get_item_code(ebay_item)
+            if item_code == None:
+                make_ebay_log(title="Item not found", status="Error", method="get_order_items",
+                              message="Item not found for %s" %(ebay_item.get("Item").get("ItemID")),request_data=ebay_item.get("Item").get("ItemID"))
         items.append({
             "item_code": item_code,
             "item_name": ebay_item.get("Item").get("Title"),
@@ -245,12 +252,33 @@ def get_item_code(ebay_item):
     # item_code = frappe.db.get_value("Item", {"ebay_variant_id": ebay_item.get("variant_id")}, "item_code")
     item_code = False
     if not item_code:
-        item_code = frappe.db.get_value("Item", {"ebay_product_id": ebay_item.get("Item").get("ItemID")}, "item_code")
+        # item_code = frappe.db.get_value("Item", {"ebay_product_id": ebay_item.get("Item").get("ItemID")}, "item_code")
+        item_id = ebay_item.get("Item").get("ItemID")
+        item_code_query = """ select item_code from `tabItem` where ebay_product_id='%s' or ebay_product_id like '%s,' or ebay_product_id like ',%s,' or ebay_product_id like ',%s'""" % (item_id,item_id,item_id,item_id)
+        vwrite("in get_item_code: %s" % item_code_query)
+        item_code_result = frappe.db.sql(item_code_query, as_dict=1)
+        if len(item_code_result)>1:
+            item_code = None
+        else:
+            item_code = item_code_result[0].get("item_code")
+        vwrite("mapmanyebaytooneerp - item_code: %s" % item_code)
     return item_code
 
 def get_variant_item_code(ebay_item):
-    item = frappe.get_doc("Item", {"ebay_product_id": ebay_item.get("Item").get("ItemID")})
-    item_code = item.get("item_code")
+    # item = frappe.get_doc("Item", {"ebay_product_id": ebay_item.get("Item").get("ItemID")})
+    # item_code = item.get("item_code")
+    item_id = ebay_item.get("Item").get("ItemID")
+    item_code_query = """ select item_code from `tabItem` where ebay_product_id='%s' or ebay_product_id like '%s,' or ebay_product_id like ',%s,' or ebay_product_id like ',%s'""" % (
+    item_id, item_id, item_id, item_id)
+    vwrite("in get_variant_item_code: %s" % item_code_query)
+    item_code_result = frappe.db.sql(item_code_query, as_dict=1)
+    vwrite("item_code_result: ")
+    vwrite(item_code_result)
+    if len(item_code_result) > 1:
+        item_code=None
+    else:
+        item_code = item_code_result[0].get("item_code")
+    vwrite("item_code : %s" % item_code)
     variant_items_query = """ select item_code from `tabItem` where variant_of='%s'""" % (item_code)
     variant_items_result = frappe.db.sql(variant_items_query, as_dict=1)
     all_variation_specifics = ebay_item.get("Variation").get("VariationSpecifics").get("NameValueList")

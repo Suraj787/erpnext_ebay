@@ -15,7 +15,7 @@ def get_ebay_category_id_of_item(item):
     return category_id
 def get_oldest_serial_number(ebay_product_id):
     oldest_serial_number = None
-    serial_number_query = """select sn.name,sn.serial_no,sn.item_code from `tabSerial No` sn inner join tabItem i on i.item_code=sn.item_code where i.ebay_product_id='%s' order by sn.creation limit 1""" % ebay_product_id
+    serial_number_query = """select sn.name,sn.serial_no,sn.item_code from `tabSerial No` sn inner join tabItem i on i.item_code=sn.item_code where i.ebay_product_id='%s' or i.ebay_product_id like '%s,' or i.ebay_product_id like ',%s,' or i.ebay_product_id like ',%s' order by sn.creation limit 1""" % (ebay_product_id,ebay_product_id,ebay_product_id,ebay_product_id)
     for serial_number in frappe.db.sql(serial_number_query, as_dict=1):
         oldest_serial_number = serial_number.get("serial_no")
     return oldest_serial_number
