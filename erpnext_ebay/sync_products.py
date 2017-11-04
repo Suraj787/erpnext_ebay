@@ -48,7 +48,7 @@ def upload_image_to_ebay(image_url):
     return uploaded_image
 def generate_critical_ebay_listings(ebay_item_list,critical_ebay_listings,price_list,warehouse):
     for listing in ebay_item_list:
-        ebay_product_id_cond = " and (ebay_product_id='%s' or ebay_product_id like '%s,' or ebay_product_id like ',%s,' or ebay_product_id like ',%s')" % (listing,listing,listing,listing)
+        ebay_product_id_cond = " and (ebay_product_id='%s' or ebay_product_id like '%s' or ebay_product_id like '%s' or ebay_product_id like '%s')" % (listing,listing+",%","%,"+listing+",%","%,"+listing)
         item_query = """select name, opening_stock, item_code, item_name, item_group, description, stock_uom, ebay_product_id, ebay_category_id, 
                         standard_rate from tabItem where sync_with_ebay=1 and (disabled is null or disabled = 0) %s""" % ebay_product_id_cond
         for item in frappe.db.sql(item_query, as_dict=1):
@@ -141,7 +141,7 @@ def sync_erpnext_items(price_list, warehouse, ebay_item_list,critical_ebay_listi
                 if(len(critical_ebay_listings)):
                     vwrite("map existing erpid & %s in log file" % (critical_ebay_listings[0]))
 
-                    get_erpid_query = """select name from tabItem where ebay_product_id= '%s' or ebay_product_id like '%s,' or ebay_product_id like ',%s,' or ebay_product_id like ',%s'""" %(critical_ebay_listings[0],critical_ebay_listings[0],critical_ebay_listings[0],critical_ebay_listings[0])
+                    get_erpid_query = """select name from tabItem where ebay_product_id= '%s' or ebay_product_id like '%s' or ebay_product_id like '%s' or ebay_product_id like '%s'""" %(critical_ebay_listings[0],critical_ebay_listings[0]+",%","%,"+critical_ebay_listings[0]+",%","%,"+critical_ebay_listings[0])
                     erp_item_by_ebay_prod_id = frappe.db.sql(get_erpid_query, as_dict=1)
                     vwrite(erp_item_by_ebay_prod_id)
                     vwrite('got erpid')
