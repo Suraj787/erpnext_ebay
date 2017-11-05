@@ -225,7 +225,10 @@ def get_order_items(order_items, ebay_settings):
         if('Variation' in ebay_item):
             item_code = get_variant_item_code(ebay_item)
             if item_code == None:
-                make_ebay_log(title="Variant Item not found", status="Error", method="get_order_items",
+                # check if item is mapped to non-variant item
+                item_code = get_item_code(ebay_item)
+                if item_code == None:
+                    make_ebay_log(title="Variant Item not found", status="Error", method="get_order_items",
                               message="Variant Item not found for %s" %(ebay_item.get("Item").get("ItemID")),request_data=ebay_item.get("Item").get("ItemID"))
         else:
             item_code = get_item_code(ebay_item)
@@ -252,7 +255,10 @@ def get_item_code(ebay_item):
         item_code_query = """ select item_code from `tabItem` where ebay_product_id='%s' or ebay_product_id like '%s' or ebay_product_id like '%s' or ebay_product_id like '%s'""" % (item_id,item_id+",%","%,"+item_id+",%","%,"+item_id)
         item_code_result = frappe.db.sql(item_code_query, as_dict=1)
         if len(item_code_result)>1:
-            item_code = None
+            # getting non-variant item - erpnext_ebay/issue#4
+            filter_query = """ select item_code from `tabItem` where variant_of is null and (ebay_product_id='%s' or ebay_product_id like '%s' or ebay_product_id like '%s' or ebay_product_id like '%s')""" % (item_id,item_id+",%","%,"+item_id+",%","%,"+item_id)
+            filter_result = frappe.db.sql(filter_query, as_dict=1)
+            item_code = filter_result[0].get("item_code")
         else:
             item_code = item_code_result[0].get("item_code")
     return item_code
@@ -265,7 +271,11 @@ def get_variant_item_code(ebay_item):
     item_id, item_id+",%", "%,"+item_id+",%", "%,"+item_id)
     item_code_result = frappe.db.sql(item_code_query, as_dict=1)
     if len(item_code_result) > 1:
-        item_code=None
+        # getting non-variant item - erpnext_ebay/issue#4
+        filter_query = """ select item_code from `tabItem` where variant_of is null and (ebay_product_id='%s' or ebay_product_id like '%s' or ebay_product_id like '%s' or ebay_product_id like '%s')""" % (
+        item_id, item_id + ",%", "%," + item_id + ",%", "%," + item_id)
+        filter_result = frappe.db.sql(filter_query, as_dict=1)
+        item_code = filter_result[0].get("item_code")
     else:
         item_code = item_code_result[0].get("item_code")
     variant_items_query = """ select item_code from `tabItem` where variant_of='%s'""" % (item_code)
