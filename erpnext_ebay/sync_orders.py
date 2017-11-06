@@ -282,10 +282,14 @@ def get_variant_item_code(ebay_item):
     variant_items_result = frappe.db.sql(variant_items_query, as_dict=1)
     all_variation_specifics = ebay_item.get("Variation").get("VariationSpecifics").get("NameValueList")
     variation_specifics = []
-    for required_variation_specifics in all_variation_specifics:
-        # if required_variation_specifics.get("Name").lower()!='warranty':
-        if 'warranty' not in required_variation_specifics.get("Name").lower():
-            variation_specifics.append(required_variation_specifics)
+    if (type(all_variation_specifics) is dict):
+        if 'warranty' not in all_variation_specifics.get("Name").lower():
+            variation_specifics.append(all_variation_specifics)
+    else:
+        for required_variation_specifics in all_variation_specifics:
+            # if required_variation_specifics.get("Name").lower()!='warranty':
+            if 'warranty' not in required_variation_specifics.get("Name").lower():
+                variation_specifics.append(required_variation_specifics)
     for variant_item in variant_items_result:
         # get records from tabItemVariantAttributes where parent=variant_item
         variant_attributes_query = """ select * from `tabItem Variant Attribute` where parent='%s' and attribute != 'Warranty'""" % (variant_item.get("item_code"))
