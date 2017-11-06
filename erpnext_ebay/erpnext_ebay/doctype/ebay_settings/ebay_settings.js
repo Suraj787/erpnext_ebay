@@ -39,7 +39,6 @@ frappe.ui.form.on('Ebay Settings', {
             });
         }, __("Developer Actions"));
         frm.add_custom_button(__("Enable is_purchase_item"), function() {
-            alert("Don't perform any actions until you receive confirmation")
             frappe.call({
                method:"erpnext_ebay.developer_actions.enable_is_purchase_item",
                args: {},

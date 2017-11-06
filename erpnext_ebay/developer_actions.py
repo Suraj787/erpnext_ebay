@@ -47,11 +47,10 @@ def enable_is_purchase_item(ignore_filter_conditions=False):
     # enabling is_purchase_item for variants of 'Refurbished Lenovo Thinkpad'
     items = frappe.get_all("Item", fields=["item_code,is_purchase_item"],filters={"variant_of":"Refurbished Lenovo Thinkpad","is_purchase_item":0})
     for item in items:
-        variant_item = frappe.get_doc({
-                "doctype": "Item",
-                "item_code":item.get("item_code")
-        })
-        dwrite(variant_item.get("is_purchase_item"))
+	variant_item = frappe.get_doc("Item",{"item_code":item.get("item_code")})
+	variant_item.is_purchase_item=1
+	variant_item.flags.ignore_mandatory = True
+	variant_item.save(ignore_permissions=True)
     return True
 def get_cancelled_ebay_orders(ignore_filter_conditions=False):
     cancelled_ebay_orders = []
