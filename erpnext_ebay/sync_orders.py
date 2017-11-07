@@ -294,15 +294,25 @@ def get_variant_item_code(ebay_item):
         # get records from tabItemVariantAttributes where parent=variant_item
         variant_attributes_query = """ select * from `tabItem Variant Attribute` where parent='%s' and attribute != 'Warranty'""" % (variant_item.get("item_code"))
         variant_attributes_result = frappe.db.sql(variant_attributes_query, as_dict=1)
-        if len(variant_attributes_result)==len(variation_specifics):
-            # for each variation specific, compare with result row
-            matched = 0
+        # >> ebay may have extra attributes which we won't consider in erp, so removing equal length condition
+        # if len(variant_attributes_result)==len(variation_specifics):
+        #     # for each variation specific, compare with result row
+        #     matched = 0
+        #     for variation_specific in variation_specifics:
+        #         for variant_attributes_row in variant_attributes_result:
+        #             if((variant_attributes_row.get("attribute").lower()==variation_specific.get("Name").lower()) and (variant_attributes_row.get("attribute_value").lower()==variation_specific.get("Value").lower())):
+        #                 matched = matched+1
+        #             if len(variation_specifics)==matched:
+        #                 return variant_item.get("item_code")
+        matched = 0
+        for variant_attributes_row in variant_attributes_result:
             for variation_specific in variation_specifics:
-                for variant_attributes_row in variant_attributes_result:
-                    if((variant_attributes_row.get("attribute").lower()==variation_specific.get("Name").lower()) and (variant_attributes_row.get("attribute_value").lower()==variation_specific.get("Value").lower())):
-                        matched = matched+1
-                    if len(variation_specifics)==matched:
-                        return variant_item.get("item_code")
+                if ((variant_attributes_row.get("attribute").lower() == variation_specific.get("Name").lower()) and (
+                    variant_attributes_row.get("attribute_value").lower() == variation_specific.get("Value").lower())):
+                    matched = matched + 1
+        if len(variant_attributes_result) == matched:
+            return variant_item.get("item_code")
+            # << ebay may have extra attributes which we won't consider in erp, so removing equal length condition
     return None
 
 def get_order_taxes(ebay_order, ebay_settings):
