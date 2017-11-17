@@ -55,6 +55,9 @@ def get_request(path,apitype,params, settings=None):
         vwrite("exception occured")
         vwrite(e)
         vwrite(e.response.dict())
+    except Exception as e:
+        vwrite(e)
+        vwrite(e.message)
     return response.dict()
 	# check_api_call_limit(r)
 	# r.raise_for_status()

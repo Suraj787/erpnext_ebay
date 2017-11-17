@@ -52,6 +52,17 @@ def enable_is_purchase_item(ignore_filter_conditions=False):
 	variant_item.flags.ignore_mandatory = True
 	variant_item.save(ignore_permissions=True)
     return True
+
+@frappe.whitelist()
+def check_m2m(ignore_filter_conditions=False):
+    return True
+    # params = {"ItemID":"182748911924","MemberMessage":{"Subject":"Test Subject Please Ignore","Body":"We are testing this service","QuestionType":"General","RecipientID":"vamskrishn647"}}
+    # message = get_request('AddMemberMessageAAQToPartner', 'trading', params)
+    # if message.get("status_code")==200:
+    #     return True
+    # else:
+    #     return False
+
 def get_cancelled_ebay_orders(ignore_filter_conditions=False):
     cancelled_ebay_orders = []
     params = {'CreateTimeFrom': startTime, 'CreateTimeTo': endTime, 'OrderStatus': 'Cancelled'}
