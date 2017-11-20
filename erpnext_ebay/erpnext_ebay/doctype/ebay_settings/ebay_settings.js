@@ -92,9 +92,11 @@ frappe.ui.form.on('Ebay Settings', {
             });
 	    }
 	    function access_check_m2m(){
+	    body_params = {"customer_name":"vamsi","item_name":"dummy item","video_link":"https://www.youtube.com/watch?v=E5ln4uR4TwQ"}
             frappe.call({
-               method:"erpnext_ebay.developer_actions.check_m2m",
-               args: {},
+//               method:"erpnext_ebay.developer_actions.check_m2m",
+               method:"erpnext_ebay.utils.send_ebay_m2m_message",
+               args: {"itemid":"182748911924","subject":"Test Subject","message_body_code":"delivery_note_for_other_items","recipient":"vamskrishn647","message_body_params":body_params},
                callback: function(r) {
                    msgprint("eBay M2M result exported to devlogfile.txt", "Information");
                }
