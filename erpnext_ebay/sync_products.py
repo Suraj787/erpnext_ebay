@@ -42,10 +42,10 @@ def sync_products(price_list, warehouse):
     # vwrite(transactionList)
 
 def upload_image_to_ebay(image_url):
-    vwrite(image_url)
     image_upload = get_request("UploadSiteHostedPictures", "trading", {"ExternalPictureURL": image_url})
     uploaded_image = image_upload["SiteHostedPictureDetails"].get("FullURL")
     return uploaded_image
+
 def generate_critical_ebay_listings(ebay_item_list,critical_ebay_listings,price_list,warehouse):
     for listing in ebay_item_list:
         ebay_product_id_cond = " and (ebay_product_id='%s' or ebay_product_id like '%s' or ebay_product_id like '%s' or ebay_product_id like '%s')" % (listing,listing+",%","%,"+listing+",%","%,"+listing)

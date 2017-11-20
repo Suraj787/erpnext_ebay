@@ -1,4 +1,3 @@
-# coding=utf-8
 from __future__ import unicode_literals
 import frappe
 import json
@@ -163,10 +162,20 @@ def replace_with_newlines(element):
     return text
 
 @frappe.whitelist()
-def send_ebay_m2m_message(itemid,subject,message_body_code,recipient,message_body_params=None,message_body=None,question_type="CustomizedSubject",ignore_filter_conditions=False):
+def send_ebay_m2m_message(itemid,subject,message_body_code,recipient,message_body_params=None,message_body=None,question_type="CustomizedSubject",attachments='[]',ignore_filter_conditions=False):
     # itemid - ebay_product_id
     # recipient - ebay_buyer_id
     # message_body_code - code to generate message body
+    from .sync_products import upload_image_to_ebay
+    if isinstance(attachments, basestring):
+        attachments = json.loads(attachments)
+    uploaded_images = []
+    for a in attachments:
+        if isinstance(a, basestring):
+            attach = frappe.db.get_value("File", {"name": a},
+                                         ["file_name", "file_url", "is_private"], as_dict=1)
+            uploaded_image_url = upload_image_to_ebay('http://www.usedyetnew.com'+attach.get("file_url"))
+            uploaded_images.append({'uploaded_image_url':uploaded_image_url,'uploaded_image_name':attach.get("file_name")})
     if not message_body:
         message_body = get_message_body_from_code(message_body_code,message_body_params)
     message_body = BeautifulSoup(message_body)
@@ -176,12 +185,14 @@ def send_ebay_m2m_message(itemid,subject,message_body_code,recipient,message_bod
         for line in lines.findAll(['div','p']):
             line = replace_with_newlines(line)
             formatted_message_body+= '\n '+line
-        vwrite(formatted_message_body)
     except Exception as e:
         vwrite(e.message)
     params = {"ItemID":itemid,"MemberMessage":{"Subject":subject,"Body":formatted_message_body,"QuestionType":question_type,"RecipientID":recipient}}
+    if len(uploaded_images):
+        params['MemberMessage']['MessageMedia'] = []
+        for image in uploaded_images:
+            params['MemberMessage']['MessageMedia'].append({'MediaName':image.get("uploaded_image_name"),'MediaURL':image.get("uploaded_image_url")})
     message = get_request('AddMemberMessageAAQToPartner', 'trading', params)
-    vwrite(params)
     if message.get("status_code")==200:
         return True
     else:
