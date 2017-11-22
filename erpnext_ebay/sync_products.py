@@ -72,8 +72,9 @@ def increase_price_by_x_percent(item,price):
     item_data = {"Item": {"ItemID": item.get("ebay_product_id"), "PrimaryCategory": {"CategoryID": item.get("ebay_category_id")}, "StartPrice": new_price}}
     reviseEbayItem(item, item_data)
 def trigger_update_item_stock(doc, method):
-    vwrite("EBAY OK")
-    frappe.msgprint(_("Inside ebay_sync_products"))
+    dummy = 1
+    # vwrite("EBAY OK")
+    # frappe.msgprint(_("Inside ebay_sync_products"))
 
 def sync_ebay_items(warehouse,ebay_item_list):
     get_seller_list(warehouse,ebay_item_list)
