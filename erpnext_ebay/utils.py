@@ -63,11 +63,7 @@ def make_ebay_log(title="Sync Log", status="Queued", method="sync_ebay", message
     # ebaydebug("DEBUG END <==")
 
 def get_message_body_from_code(message_body_code,message_body_params={}):
-    vwrite("in get_message_body_from_code")
-    # vwrite(type(message_body_params))
-    # vwrite(message_body_params)
-    # if not message_body_params:
-    #     message_body_params = json.loads(message_body_params)
+    message_body_params = json.loads(message_body_params)
     message_body = ""
     if (message_body_code == "sales_order_for_led_tv"):
         message_body = """
