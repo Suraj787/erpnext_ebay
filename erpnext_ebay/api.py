@@ -7,12 +7,21 @@ from .sync_orders import sync_orders,update_paisapay_id
 from .utils import disable_ebay_sync_on_exception, make_ebay_log
 from frappe.utils.background_jobs import enqueue
 from erpnext_ebay.vlog import vwrite
+from datetime import datetime,timedelta
+from .send_feedback_requests import send_ebay_feedback_request
 
 @frappe.whitelist()
 def sync_ebay():
-	enqueue("erpnext_ebay.api.sync_ebay_resources", queue='long')
+	enqueue("erpnext_ebay.api.init_feedback_requests", queue='long')
+    # enqueue("erpnext_ebay.api.sync_ebay_resources", queue='long')
 	frappe.msgprint(_("Queued for syncing. It may take a few minutes to an hour if this is your first sync."))
 
+@frappe.whitelist()
+def init_feedback_requests():
+    ebay_settings = frappe.get_doc("Ebay Settings")
+    # make_ebay_log(title="Ebay Feedback Job Queued", status="Queued", method=frappe.local.form_dict.cmd,message="Ebay Feedback Job Queued")
+    if(ebay_settings.enable_ebay):
+        send_ebay_feedback_request()
 @frappe.whitelist()
 def sync_ebay_resources():
     "Enqueue longjob for syncing shopify"
