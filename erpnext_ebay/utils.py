@@ -63,7 +63,8 @@ def make_ebay_log(title="Sync Log", status="Queued", method="sync_ebay", message
     # ebaydebug("DEBUG END <==")
 
 def get_message_body_from_code(message_body_code,message_body_params={}):
-    message_body_params = json.loads(message_body_params)
+    if message_body_params:
+        message_body_params = json.loads(message_body_params)
     message_body = ""
     if (message_body_code == "sales_order_for_led_tv"):
         message_body = """
@@ -182,7 +183,9 @@ def send_ebay_m2m_message(itemid,subject,message_body_code,recipient,message_bod
             line = replace_with_newlines(line)
             formatted_message_body+= '\n '+line
     except Exception as e:
+        vwrite("Exception raised in send_ebay_m2m_message")
         vwrite(e.message)
+    
     params = {"ItemID":itemid,"MemberMessage":{"Subject":subject,"Body":formatted_message_body,"QuestionType":question_type,"RecipientID":recipient}}
     if len(uploaded_images):
         params['MemberMessage']['MessageMedia'] = []

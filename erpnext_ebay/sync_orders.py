@@ -64,9 +64,14 @@ def sync_ebay_orders():
                     frappe.local.form_dict.count_dict["orders"] += 1
 
                 except EbayError, e:
+                    vwrite("EbayError raised in create_order")
+                    vwrite(ebay_order)
                     make_ebay_log(status="Error", method="sync_ebay_orders", message=frappe.get_traceback(),
                                      request_data=ebay_order.get("OrderID"), exception=True)
                 except Exception, e:
+                    vwrite("Exception raised in create_order")
+                    vwrite(e.message)
+                    vwrite(ebay_order)
                     if e.args and e.args[0] and e.args[0].startswith("402"):
                         raise e
                     else:
@@ -76,6 +81,7 @@ def sync_ebay_orders():
             else:
                 vwrite("Not valid customer and product")
         else:
+            vwrite("Item not in sync: %s" % ebay_order.get("TransactionArray").get("Transaction")[0].get("Item").get("Title"))
             make_ebay_log(title="%s" % ebay_order.get("TransactionArray").get("Transaction")[0].get("Item").get("Title"), status="Error", method="sync_ebay_orders",
                              request_data=ebay_order.get("OrderID"),message="Sales order item is not in sync with erp. Sales Order: %s " % ebay_order.get(
                                  "OrderID"))
@@ -88,7 +94,7 @@ def sync_cancelled_ebay_orders():
 def valid_customer_and_product(ebay_order):
     customer_id = ebay_order.get("BuyerUserID")
     if customer_id:
-        if not frappe.db.get_value("Customer", {"ebay_customer_id": customer_id}, "name"):
+        if not frappe.db.get_value("Customer", {"ebay_customer_id": customer_id,"name":ebay_order.get("ShippingAddress").get("Name")}, "name"):
             create_customer(ebay_order, ebay_customer_list=[])
         else:
             create_customer_address(ebay_order, customer_id)
@@ -151,9 +157,14 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
             so.save(ignore_permissions=True)
             # so.submit()
         except EbayError, e:
+            vwrite("EbayError raised in create_sales_order")
+            vwrite(ebay_order)
             make_ebay_log(title=e.message, status="Error", method="create_sales_order", message=frappe.get_traceback(),
                           request_data=ebay_order.get("OrderID"), exception=True)
         except Exception, e:
+            vwrite("Exception raised in create_sales_order")
+            vwrite(e.message)
+            vwrite(ebay_order)
             if e.args and e.args[0] and e.args[0].startswith("402"):
                 raise e
             else:
