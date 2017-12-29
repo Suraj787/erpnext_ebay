@@ -42,6 +42,9 @@ def create_customer(ebay_order, ebay_customer_list):
 
 			
 	except Exception, e:
+		vwrite("Exception raised in create_customer")
+		vwrite(e.message)
+		vwrite(ebay_order)
 		if e.args[0] and e.args[0].startswith("402"):
 			raise e
 		else:
@@ -90,7 +93,9 @@ def create_customer_address(ebay_order, ebay_customer):
 				frappe.db.commit()
 
 		except Exception, e:
-			vwrite('exception occurred')
+			vwrite('Exception raised in create_customer_address')
+			vwrite(e.message)
+			vwrite(ebay_order)
 			make_ebay_log(title=e.message, status="Error", method="create_customer_address",
 						  message=frappe.get_traceback(),
 						  request_data=ebay_customer, exception=True)
@@ -129,6 +134,9 @@ def create_customer_contact(ebay_order, ebay_customer):
 			# 		}]
 			# 	}).save()
 		except Exception, e:
+			vwrite("Exception raised in create_customer_contact")
+			vwrite(e.message)
+			vwrite(ebay_order)
 			make_ebay_log(title=e.message, status="Error", method="create_customer_contact", message=frappe.get_traceback(),
 				request_data=email_id, exception=True)
 

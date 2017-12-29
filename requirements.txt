@@ -3,3 +3,4 @@ erpnext
 lxml
 requests
 ebaysdk
+google-api-python-client
