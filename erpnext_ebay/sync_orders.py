@@ -130,9 +130,14 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
         # get oldest serial number and update in tabSales Order
         serial_number = get_oldest_serial_number(ebay_order.get("TransactionArray").get("Transaction")[0].get("Item").get("ItemID")) # sending ebay_product_id
         try:
+            if ebay_order.get("CheckoutStatus").get("PaymentMethod")=='COD':
+                is_cod = True
+            else:
+                is_cod = False
             so = frappe.get_doc({
                 "doctype": "Sales Order",
                 "naming_series": ebay_settings.sales_order_series or "SO-Ebay-",
+                "is_cod": is_cod,
                 "ebay_order_id": ebay_order.get("OrderID"),
 		"ebay_buyer_id": ebay_order.get("BuyerUserID"),
                 "customer": frappe.db.get_value("Customer",
