@@ -70,7 +70,7 @@ def get_feedback_required_ids_from_erp():
         inner join `tabSales Order` so on so.name=dni.against_sales_order
         where dn.return_against is null and so.name like '%s' and dn.posting_date < '%s' and dn.posting_date > '%s' and dn.status='Completed'
         order by dn.creation desc
-        """ % ("SO-Ebay-%",datetime.now() + timedelta(days=-5),datetime.now() + timedelta(days=-30))
+        """ % ("SO-Ebay-%",datetime.now() + timedelta(days=-10),datetime.now() + timedelta(days=-60))
     dns = []
     dns = frappe.db.sql(delivery_note_list, as_dict=1)
     for dn in dns:
@@ -81,7 +81,7 @@ def get_ebay_claimed_buyer_ids():
     ebay_claimed_buyer_ids = []
     delivery_note_list = """
         select * from `tabEbay Claims` where transaction_date > '%s'
-        """ % str(datetime.now() + timedelta(days=-30))
+        """ % str(datetime.now() + timedelta(days=-60))
     try:
         claims = frappe.db.sql(delivery_note_list, as_dict=1)
     except Exception, e:
