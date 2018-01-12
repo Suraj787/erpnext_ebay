@@ -57,6 +57,14 @@ def create_customer_address(ebay_order, ebay_customer):
 					  request_data=ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"), exception=True)
 	else:
 		try:
+			if ebay_order.get("ShippingAddress").get("Street1"):
+				address_line1 = ebay_order.get("ShippingAddress").get("Street1").replace("'", "")
+			else:
+				address_line1 = ebay_order.get("ShippingAddress").get("Street1")
+			if ebay_order.get("ShippingAddress").get("Street2"):
+				address_line2 = ebay_order.get("ShippingAddress").get("Street2").replace("'", "")
+			else:
+				address_line2 = ebay_order.get("ShippingAddress").get("Street2")
 			if not frappe.db.get_value("Address",
 									   {"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID")}, "name"):
 				frappe.get_doc({
@@ -64,8 +72,8 @@ def create_customer_address(ebay_order, ebay_customer):
 					"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID"),
 					"address_title": ebay_order.get("ShippingAddress").get("Name"),
 					"address_type": "Shipping",
-					"address_line1": ebay_order.get("ShippingAddress").get("Street1").replace("'", ""),
-					"address_line2": ebay_order.get("ShippingAddress").get("Street2").replace("'", ""),
+					"address_line1": address_line1,
+					"address_line2": address_line2,
 					"city": ebay_order.get("ShippingAddress").get("CityName"),
 					"state": ebay_order.get("ShippingAddress").get("StateOrProvince"),
 					"pincode": ebay_order.get("ShippingAddress").get("PostalCode"),
@@ -82,8 +90,8 @@ def create_customer_address(ebay_order, ebay_customer):
 			else:
 				frappe.db.sql(
 					"""update tabAddress set address_title='%s',address_type='Shipping',address_line1='%s',address_line2='%s',city='%s',state='%s',pincode='%s',country='%s',phone='%s',email_id='%s' where ebay_address_id='%s' """
-					% (ebay_order.get("ShippingAddress").get("Name"), ebay_order.get("ShippingAddress").get("Street1"),
-					   ebay_order.get("ShippingAddress").get("Street2"),
+					% (ebay_order.get("ShippingAddress").get("Name"), address_line1,
+					   address_line2,
 					   ebay_order.get("ShippingAddress").get("CityName"),
 					   ebay_order.get("ShippingAddress").get("StateOrProvince"), ebay_order.get("ShippingAddress").get("PostalCode"),
 					   ebay_order.get("ShippingAddress").get("CountryName"),
