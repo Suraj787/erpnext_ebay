@@ -94,7 +94,7 @@ def sync_cancelled_ebay_orders():
 def valid_customer_and_product(ebay_order):
     customer_id = ebay_order.get("BuyerUserID")
     if customer_id:
-        if not frappe.db.get_value("Customer", {"ebay_customer_id": customer_id,"name":ebay_order.get("ShippingAddress").get("Name")}, "name"):
+        if not frappe.db.get_value("Customer", {"ebay_customer_id": customer_id}, "name"):
             create_customer(ebay_order, ebay_customer_list=[])
         else:
             create_customer_address(ebay_order, customer_id)
