@@ -70,9 +70,9 @@ def sync_ebay_orders():
                                      request_data=ebay_order.get("OrderID"), exception=True)
                 except Exception, e:
                     vwrite("Exception raised in create_order")
-                    vwrite(e.message)
+                    vwrite(e)
                     vwrite(ebay_order)
-                    if e.args and e.args[0] and e.args[0].startswith("402"):
+                    if e.args and e.args[0]:
                         raise e
                     else:
                         make_ebay_log(title=e.message, status="Error", method="sync_ebay_orders",
@@ -143,7 +143,7 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
                 "customer": frappe.db.get_value("Customer",
                                                 {"ebay_customer_id": ebay_order.get("BuyerUserID")}, "name"),
                 "delivery_date": delivery_date,
-                "transaction_date": ebay_order.get("TransactionArray").get("Transaction")[0].get("CreatedDate"),
+                "transaction_date": ebay_order.get("TransactionArray").get("Transaction")[0].get("CreatedDate")[:10],
                 "company": ebay_settings.company,
                 "selling_price_list": ebay_settings.price_list,
                 "ignore_pricing_rule": 1,
@@ -168,9 +168,9 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
                           request_data=ebay_order.get("OrderID"), exception=True)
         except Exception, e:
             vwrite("Exception raised in create_sales_order")
-            vwrite(e.message)
+            vwrite(e)
             vwrite(ebay_order)
-            if e.args and e.args[0] and e.args[0].startswith("402"):
+            if e.args and e.args[0]:
                 raise e
             else:
                 make_ebay_log(title=e.message, status="Error", method="create_sales_order",
@@ -276,7 +276,8 @@ def get_item_code(ebay_item):
             filter_result = frappe.db.sql(filter_query, as_dict=1)
             item_code = filter_result[0].get("item_code")
         else:
-            item_code = item_code_result[0].get("item_code")
+            if len(item_code_result):
+                item_code = item_code_result[0].get("item_code")
     return item_code
 
 def get_variant_item_code(ebay_item):
