@@ -51,7 +51,25 @@ def get_buyer_details(buyerid):
 def createorupdatecontact(buyer_details,name):
     mobile = buyer_details.get("phone")
     contactfromgoogle = get_contact_by_number(mobile)
+    # >> Issue#21
+    def get_prefix(name):
+        second_index = name.replace('-', 'XXX', 1).find('-')-1
+        filtered_name = name[second_index:len(name)]
+        if filtered_name[-3:] == '_NF':
+            actual_name = filtered_name[:-3]
+        else:
+            actual_name = filtered_name
+        return name[:name.find(actual_name)]+actual_name
+    # << Issue#21
     if contactfromgoogle:
+        # >> Issue#21
+        if contactfromgoogle.get("names")[0].get("displayName"):
+            actual_name = get_prefix(contactfromgoogle.get("names")[0].get("displayName"))
+        if name[-3:]=='_NF':
+            name = actual_name+'_NF'
+        else:
+            name = actual_name
+        # << Issue#21
         # update existing contact with google contact
         contact = {"name":name,"mobile":mobile}
         update_contact(contact)

@@ -9,14 +9,20 @@ from frappe.utils.background_jobs import enqueue
 from erpnext_ebay.vlog import vwrite
 from datetime import datetime,timedelta
 from .send_feedback_requests import send_ebay_feedback_request
+from .ebay_lead_management import lead_status_modifier
 
 @frappe.whitelist()
 def sync_ebay():
     enqueue("erpnext_ebay.api.init_feedback_requests", queue='long')
     enqueue("erpnext_ebay.api.sync_ebay_resources", queue='long')
+    enqueue("erpnext_ebay.api.init_ebay_lead_management", queue='long')
     frappe.msgprint(_("Queued for syncing. It may take a few minutes to an hour if this is your first sync."))
     
 
+@frappe.whitelist()
+def init_ebay_lead_management():
+    lead_status_modifier()
+    
 @frappe.whitelist()
 def init_feedback_requests():
     ebay_settings = frappe.get_doc("Ebay Settings")
