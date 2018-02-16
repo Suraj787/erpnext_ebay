@@ -41,9 +41,9 @@ def lead_status_modifier():
             contact = {"name":contact_name,"mobile":hot_lead.get("mobile_no")}
             create_contact(contact)
     
-    # get all `Warm` leads (warm_leads_older_than_three_days) which are older than 3 days
+    # get all `Warm` leads (warm_leads_older_than_three_days) which are older than 4 days
     warm_leads_query = """
-    select name,lead_name,mobile_no,interested_in from `tabLead` where status='Warm' and modified < NOW() - INTERVAL 3 DAY
+    select name,lead_name,mobile_no,interested_in from `tabLead` where status='Warm' and modified < NOW() - INTERVAL 4 DAY
     """
     warm_leads = frappe.db.sql(warm_leads_query, as_dict=1)
     # convert `status` of warm_leads_older_than_three_days to `Not Interested`
@@ -66,4 +66,22 @@ def lead_status_modifier():
             contact_name = "notinterested-"+warm_lead.get("interested_in")+'-'+warm_lead.get("lead_name")
             contact = {"name":contact_name,"mobile":warm_lead.get("mobile_no")}
             create_contact(contact)
-
+    # add hot leads to google contacts
+    hot_leads_query = """
+    select name,lead_name,mobile_no,interested_in from `tabLead` where status='Hot'
+    """
+    hot_leads = frappe.db.sql(hot_leads_query, as_dict=1)
+    for hot_lead in hot_leads:
+        result = get_contact_by_number(hot_lead.get("mobile_no"))
+        if result:
+            existing_name_raw = result.get("names")[0].get("displayName")
+            actual_name = get_actual_name(existing_name_raw)
+            if(actual_name[:5]=='LEAD-'):
+                actual_name = hot_lead.get("lead_name")
+            contact_name = "hot-"+hot_lead.get("interested_in")+'-'+actual_name
+            contact = {"name":contact_name,"mobile":hot_lead.get("mobile_no")}
+            update_contact(contact)
+        else:
+            contact_name = "hot-"+hot_lead.get("interested_in")+"-"+hot_lead.get("lead_name")
+            contact = {"name":contact_name,"mobile":hot_lead.get("mobile_no")}
+            create_contact(contact)
