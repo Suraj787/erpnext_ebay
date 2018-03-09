@@ -161,9 +161,9 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
             so.flags.ignore_mandatory = True
             so.save(ignore_permissions=True)
             if("Variation" in ebay_order.get("TransactionArray").get("Transaction")[0]):
-                warranty_duration = get_warranty_duration(ebay_order.get("TransactionArray").get("Transaction")[0])
+                variation_details = get_variation_details(ebay_order.get("TransactionArray").get("Transaction")[0])
                 created_so_id = frappe.db.get_value("Sales Order",{"ebay_order_id": ebay_order.get("OrderID")}, "name")
-                update_wrnty_in_desc_query = """ update `tabSales Order Item` set description='%s' where parent='%s'""" % (warranty_duration,created_so_id)
+                update_wrnty_in_desc_query = """ update `tabSales Order Item` set description='%s' where parent='%s'""" % (variation_details,created_so_id)
                 update_wrnty_in_desc_result = frappe.db.sql(update_wrnty_in_desc_query, as_dict=1)
             # so.submit()
         except EbayError, e:
@@ -186,13 +186,12 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
     frappe.db.commit()
     return so
 
-def get_warranty_duration(ebay_order_item):
-    warranty_duration = ""
+def get_variation_details(ebay_order_item):
+    variation_details = ""
     attr_list = ebay_order_item.get("Variation").get("VariationSpecifics").get("NameValueList")
     for attr in attr_list:
-        if 'warranty' in attr.get("Name").lower():
-            warranty_duration = attr.get("Value")
-    return warranty_duration
+        variation_details = variation_details + attr.get("Name") + ':' + attr.get("Value") + ' ; '
+    return variation_details
 
 # def create_sales_invoice(shopify_order, shopify_settings, so):
 #     if not frappe.db.get_value("Sales Invoice", {"shopify_order_id": shopify_order.get("id")}, "name") \
