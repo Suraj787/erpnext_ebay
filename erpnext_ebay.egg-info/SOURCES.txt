@@ -1,6 +1,7 @@
 MANIFEST.in
 README.md
 license.txt
+patches.txt
 requirements.txt
 setup.py
 erpnext_ebay/__init__.py
@@ -8,11 +9,15 @@ erpnext_ebay/api.py
 erpnext_ebay/developer_actions.py
 erpnext_ebay/dlog.py
 erpnext_ebay/ebay_item_common_functions.py
+erpnext_ebay/ebay_lead_management.py
 erpnext_ebay/ebay_requests.py
 erpnext_ebay/exceptions.py
+erpnext_ebay/globalconstants.py
 erpnext_ebay/hooks.py
 erpnext_ebay/modules.txt
 erpnext_ebay/patches.txt
+erpnext_ebay/pygcontacts.py
+erpnext_ebay/send_feedback_requests.py
 erpnext_ebay/sync_customers.py
 erpnext_ebay/sync_orders.py
 erpnext_ebay/sync_products.py
@@ -30,6 +35,11 @@ erpnext_ebay/config/docs.py
 erpnext_ebay/erpnext_ebay/__init__.py
 erpnext_ebay/erpnext_ebay/vlog.py
 erpnext_ebay/erpnext_ebay/doctype/__init__.py
+erpnext_ebay/erpnext_ebay/doctype/ebay_claims/__init__.py
+erpnext_ebay/erpnext_ebay/doctype/ebay_claims/ebay_claims.js
+erpnext_ebay/erpnext_ebay/doctype/ebay_claims/ebay_claims.json
+erpnext_ebay/erpnext_ebay/doctype/ebay_claims/ebay_claims.py
+erpnext_ebay/erpnext_ebay/doctype/ebay_claims/test_ebay_claims.py
 erpnext_ebay/erpnext_ebay/doctype/ebay_erp_item_revise_map_log/__init__.py
 erpnext_ebay/erpnext_ebay/doctype/ebay_erp_item_revise_map_log/ebay_erp_item_revise_map_log.js
 erpnext_ebay/erpnext_ebay/doctype/ebay_erp_item_revise_map_log/ebay_erp_item_revise_map_log.json
