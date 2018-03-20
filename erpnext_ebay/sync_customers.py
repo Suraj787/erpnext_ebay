@@ -67,6 +67,7 @@ def create_customer_address(ebay_order, ebay_customer):
 				address_line2 = ebay_order.get("ShippingAddress").get("Street2")
 			if not frappe.db.get_value("Address",
 									   {"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID")}, "name"):
+				customer_link_name = frappe.db.get_value("Customer", {"ebay_customer_id": ebay_order.get("BuyerUserID")}, "name")
 				frappe.get_doc({
 					"doctype": "Address",
 					"ebay_address_id": ebay_order.get("ShippingAddress").get("AddressID"),
@@ -84,7 +85,7 @@ def create_customer_address(ebay_order, ebay_customer):
 					"links": [{
 						"link_doctype": "Customer",
 						# "link_name": ebay_order.get("BuyerUserID")
-						"link_name": ebay_order.get("ShippingAddress").get("Name")
+						"link_name": customer_link_name
 					}]
 				}).insert()
 			else:

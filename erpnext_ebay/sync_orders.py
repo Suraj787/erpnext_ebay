@@ -153,6 +153,10 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
                 # "apply_discount_on": "Grand Total",
                 # "discount_amount": get_discounted_amount(ebay_order),
             })
+            so.update({
+                "customer_address": ebay_order.get("ShippingAddress").get("Name")+"-Shipping",
+                "shipping_address_name":ebay_order.get("ShippingAddress").get("Name")+"-Shipping"
+            })
             if company:
                 so.update({
                     "company": company,
