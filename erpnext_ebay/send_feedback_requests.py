@@ -9,7 +9,7 @@ from .ebay_item_common_functions import get_oldest_serial_number
 from .ebay_requests import get_request, get_filtering_condition
 import json as simplejson
 
-from pygapi.pygcontacts import fetch_contacts,get_contact_by_number,create_contact,update_contact
+from pygapi.pygcontacts import get_contact_by_number,create_contact,update_contact,pre_queue_contact
 
 @frappe.whitelist()
 def send_ebay_feedback_request():
@@ -50,7 +50,10 @@ def get_buyer_details(buyerid):
 
 def createorupdatecontact(buyer_details,name):
     mobile = buyer_details.get("phone")
-    contactfromgoogle = get_contact_by_number(mobile)
+    # >> Implementing pre queue google contacts
+    # contactfromgoogle = get_contact_by_number(mobile)
+    contactfromgoogle = None
+    # << Implementing pre queue google contacts
     # >> Issue#21
     def get_prefix(name):
         second_index = name.replace('-', 'XXX', 1).find('-')-1
@@ -76,7 +79,10 @@ def createorupdatecontact(buyer_details,name):
         
     else:
         contact = {"name":name,"mobile":mobile}
-        create_contact(contact)
+        # >> Implementing pre queue google contacts
+        # create_contact(contact)
+        pre_queue_contact(contact)
+        # << Implementing pre queue google contacts
         # create new google contact
     return ""
 
