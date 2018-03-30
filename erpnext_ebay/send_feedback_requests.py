@@ -48,7 +48,7 @@ def get_buyer_details(buyerid):
         buyer_details = row
     return buyer_details
 
-def createorupdatecontact(buyer_details,name):
+def createorupdatecontact(buyer_details,name,owner="Administrator"):
     mobile = buyer_details.get("phone")
     # >> Implementing pre queue google contacts
     # contactfromgoogle = get_contact_by_number(mobile)
@@ -81,7 +81,7 @@ def createorupdatecontact(buyer_details,name):
         contact = {"name":name,"mobile":mobile}
         # >> Implementing pre queue google contacts
         # create_contact(contact)
-        pre_queue_contact(contact)
+        pre_queue_contact(contact,owner)
         # << Implementing pre queue google contacts
         # create new google contact
     return ""
