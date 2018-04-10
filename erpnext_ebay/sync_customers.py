@@ -35,8 +35,12 @@ def create_customer(ebay_order, ebay_customer_list):
 		customer.flags.ignore_mandatory = True
 		customer.insert()
 		if customer:
-			create_customer_address(ebay_order, cust_id)
-			create_customer_contact(ebay_order, cust_id)
+			address_result = create_customer_address(ebay_order, cust_id)
+			if not address_result:
+				return False
+			contact_result = create_customer_contact(ebay_order, cust_id)
+			if not contact_result:
+				return False
 		ebay_customer_list.append(ebay_order.get("BuyerUserID"))
 		frappe.db.commit()
 
@@ -50,13 +54,22 @@ def create_customer(ebay_order, ebay_customer_list):
 		else:
 			make_ebay_log(title=e.message, status="Error", method="create_customer", message=frappe.get_traceback(),
 				request_data=ebay_order.get("BuyerUserID"), exception=True)
+		return False
+	return True
 		
 def create_customer_address(ebay_order, ebay_customer):
 	if not ebay_order.get("ShippingAddress").get("Name"):
 		make_ebay_log(title=ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"), status="Error", method="create_customer_address", message="No shipping address found for %s" % ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"),
 					  request_data=ebay_order.get("TransactionArray").get("Transaction")[0].get("Buyer").get("Email"), exception=True)
+		return False
 	else:
 		try:
+			if not ebay_order.get("ShippingAddress").get("Phone"):
+				vwrite('Phone not found in create_customer_address for buyer: %s' % ebay_order.get("BuyerUserID") )
+				make_ebay_log(title="Phone not found", status="Error", method="create_customer_address",
+						  message=ebay_order.get("BuyerUserID"),
+						  request_data=ebay_customer, exception=True)
+				return False
 			if ebay_order.get("ShippingAddress").get("Street1"):
 				address_line1 = ebay_order.get("ShippingAddress").get("Street1").replace("'", "")
 			else:
@@ -108,6 +121,8 @@ def create_customer_address(ebay_order, ebay_customer):
 			make_ebay_log(title=e.message, status="Error", method="create_customer_address",
 						  message=frappe.get_traceback(),
 						  request_data=ebay_customer, exception=True)
+			return False
+	return True
 
 
 # create_customer_contact() will create customer contact in tabContact which is used in sending email
@@ -118,6 +133,7 @@ def create_customer_contact(ebay_order, ebay_customer):
 	if not cust_name:
 		make_ebay_log(title=email_id, status="Error", method="create_customer_contact", message="Contact not found for %s" % email_id,
 					  request_data=email_id, exception=True)
+		return False
 	else:
 		try :
 			if not frappe.db.get_value("Contact", {"first_name": ebay_customer}, "name"):
@@ -148,6 +164,8 @@ def create_customer_contact(ebay_order, ebay_customer):
 			vwrite(ebay_order)
 			make_ebay_log(title=e.message, status="Error", method="create_customer_contact", message=frappe.get_traceback(),
 				request_data=email_id, exception=True)
+			return False
+	return True
 
 def get_address_title_and_type(customer_name, index):
 	address_type = _("Billing")

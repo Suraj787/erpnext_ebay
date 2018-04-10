@@ -95,10 +95,16 @@ def valid_customer_and_product(ebay_order):
     customer_id = ebay_order.get("BuyerUserID")
     if customer_id:
         if not frappe.db.get_value("Customer", {"ebay_customer_id": customer_id}, "name"):
-            create_customer(ebay_order, ebay_customer_list=[])
+            customer = create_customer(ebay_order, ebay_customer_list=[])
+            if not customer:
+                return False
         else:
-            create_customer_address(ebay_order, customer_id)
-            create_customer_contact(ebay_order, customer_id)
+            address_result = create_customer_address(ebay_order, customer_id)
+            if not address_result:
+                return False
+            contact_result = create_customer_contact(ebay_order, customer_id)
+            if not contact_result:
+                return False
 
     else:
         raise _("Customer is mandatory to create order")
