@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from datetime import datetime,timedelta
+import time
 import frappe
 from frappe import _
 from .exceptions import EbayError
@@ -11,7 +12,7 @@ from .sync_customers import create_customer,create_customer_address,create_custo
 from frappe.utils import flt, nowdate, cint
 from .ebay_item_common_functions import get_oldest_serial_number
 from .ebay_requests import get_request, get_filtering_condition
-from vlog import vwrite
+from vlog import vwrite,rwrite
 # from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note, make_sales_invoice
 
 ebay_settings = frappe.get_doc("Ebay Settings", "Ebay Settings")
@@ -86,7 +87,205 @@ def sync_ebay_orders():
                              request_data=ebay_order.get("OrderID"),message="Sales order item is not in sync with erp. Sales Order: %s " % ebay_order.get(
                                  "OrderID"))
 
+@frappe.whitelist()
+def sync_ebay_qty():
+    synced_ebay_prod_ids = []
+    # items_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and item_code='Refurbished Lenovo Thinkpad T410 Core I5 2 GB 320 GB Black' """
+    items_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and has_variants='0' """
+    # items_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and has_variants='0' and variant_of <> '' and item_code='New Samsung Panel 32 in Full HD Smart LED TV'"""
+    # Refurbished Lenovo Thinkpad-L412 - CORE I5-4 GB-160 GB
+    # Refurbished Lenovo Thinkpad-T410-2 GB-320 GB
+    # Refurbished Lenovo Thinkpad T410 Core I5 2 GB 320 GB Black
+    # New Samsung Panel 32 in Full HD Smart LED TV
+    items_res = frappe.db.sql(items_sql, as_dict=1)
+    for ebay_item in items_res:
+        item_code = ebay_item.get("item_code")
+        if not ebay_item.get("variant_of"): # for non-variant items
+            qty_to_be_updated = get_balance_qty_in_erp(item_code)
+            if ebay_item.get("ebay_product_id"):
+                for ebay_product_id in ebay_item.get("ebay_product_id").split(','):
+                    if qty_to_be_updated<0:
+                        qty_to_be_updated = 0
+                    update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_ids)
+        else: # for variant items
+            update_variant_qty_get_model(item_code,ebay_item,synced_ebay_prod_ids)
+            # qty_to_be_updated = get_balance_qty_in_erp_for_variant_item(item_code)
+            
+            
+def get_ebay_product_id_from_template(item_code):
+    ebay_product_id = ""
+    ebay_product_id_sql = """ select ebay_product_id from `tabItem` where item_code=(select variant_of from `tabItem` where item_code='%s') """ % item_code
+    ebay_product_id_res = frappe.db.sql(ebay_product_id_sql, as_dict=1)
+    for ebay_product_id_row in ebay_product_id_res:
+        ebay_product_id = ebay_product_id_row.get("ebay_product_id")
+    vwrite("returing ebay_product_id: %s" % ebay_product_id)
+    if not ebay_product_id:
+        ebay_product_id = ""
+    return ebay_product_id
 
+def update_variant_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,model_name,synced_ebay_prod_ids):
+    if ebay_product_id+model_name not in synced_ebay_prod_ids:
+        # rwrite("Updating Variant: %s, Qty: %s" %(ebay_product_id,qty_to_be_updated))
+        synced_ebay_prod_ids.append(ebay_product_id+model_name)
+        params = {
+            'Item': {
+                'ItemID':ebay_product_id,
+                'Variations': {
+                    'Variation': get_item_variation_specifics(ebay_product_id,qty_to_be_updated,model_name)
+                }
+            }
+        }
+        if len(params.get("Item").get("Variations").get("Variation"))>0 and len(params.get("Item").get("Variations").get("Variation")[0].get("VariationSpecifics").get("NameValueList"))>0:
+            rwrite("ebaysiteparams:variant")
+            rwrite(params) 
+            # reviseFixedPriceItem = get_request('ReviseFixedPriceItem','trading',params)
+            
+        # time.sleep(5)
+
+    # params = {
+    #     'Item': {
+    #         'ItemID':'183226761324',
+    #         'Variations': {
+    #             'Variation': [{
+    #                 'Quantity':'3',
+    #                 'VariationSpecifics':{
+    #                     'NameValueList': [
+    #                         {'Name':'HDD','Value':'No HDD'},
+    #                         {'Name':'RAM','Value':'No RAM'}
+    #                     ]
+    #                 }
+    #             }]
+    #         }
+    #     }
+    # }
+    # params = {
+    #     'Item': {
+    #         'ItemID':ebay_product_id,
+    #         'Variations': {
+    #             'Variation': get_item_variation_specifics(ebay_product_id,qty_to_be_updated,model_name)
+    #         }
+    #     }
+    # }   
+    # reviseFixedPriceItem = get_request('ReviseFixedPriceItem','trading',params)
+    # time.sleep(10)
+    return True
+
+def get_item_variation_specifics(item_id,qty_to_be_updated,model_name):
+    variations = []
+    name_value_list = []
+    try:
+        has_model = False
+        item = get_request('GetItem','trading',{'ItemID':item_id})
+        for variation in item.get("Item").get("Variations").get("Variation"):
+            temp = False
+            for name_value in variation.get("VariationSpecifics").get("NameValueList"):
+                if "Name" in name_value and name_value.get("Name")=='Choose Model':
+                    has_model = True
+                    if name_value.get("Value")==model_name:
+                        temp = True
+                if temp:
+                    name_value_list.append(name_value)
+
+        if not has_model:
+            rwrite("no model:: item_id: %s, model_name: %s" % (item_id,model_name))
+            variations.append({'Quantity':qty_to_be_updated, 'VariationSpecifics':variation.get("VariationSpecifics")})
+        else:
+            rwrite("has model:: item_id: %s, model_name: %s" % (item_id,model_name))
+            variations.append({'Quantity':qty_to_be_updated, 'VariationSpecifics':{'NameValueList': name_value_list}})
+            
+    except Exception,e:
+        vwrite("Exception occurred for item_id: %s " % item_id)
+        rwrite("Can't update item_id: %s with qty: %s" % (item_id,qty_to_be_updated))
+    return variations
+        
+def update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_ids):
+    if ebay_product_id not in synced_ebay_prod_ids:
+        # rwrite("Updating Non-Variant: %s, Qty: %s" %(ebay_product_id,qty_to_be_updated))
+        synced_ebay_prod_ids.append(ebay_product_id)
+    
+    params = {
+        'InventoryStatus': {'ItemID':ebay_product_id,'Quantity':qty_to_be_updated}
+    }
+    rwrite("ebaysiteparams:nonvariant")
+    rwrite(params)
+    # reviseInventoryStatus = get_request('ReviseInventoryStatus','trading',params)
+    # time.sleep(10)
+    return True
+def get_balance_qty_in_erp(item_code):
+    stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse='%s' and item_code='%s' """ % (ebay_settings.warehouse,item_code)
+    stock_res = frappe.db.sql(stock_sql, as_dict=1)
+    if stock_res[0] and stock_res[0].get("bal_qty"):
+        bal_qty = stock_res[0].get("bal_qty")
+    else:
+        bal_qty = 0
+    so_submitted_sql = """ select sum(soi.qty) as so_submitted_qty from `tabSales Order` so inner join `tabSales Order Item` soi on soi.parent = so.name where soi.item_code='%s' and so.status not in ('Draft','Closed','Cancelled','Completed') """ % item_code
+    so_submitted_res = frappe.db.sql(so_submitted_sql, as_dict=1)
+    if so_submitted_res[0] and so_submitted_res[0].get("so_submitted_qty"):
+        so_submitted_count = so_submitted_res[0].get("so_submitted_qty")
+    else:
+        so_submitted_count = 0
+    actual_qty = bal_qty - so_submitted_count
+    return actual_qty
+def update_variant_qty_get_model(item_code,ebay_item,synced_ebay_prod_ids):
+    model = None
+    model_sql = """ select attribute_value from `tabItem Variant Attribute` where parent='%s' and attribute like '%s' """ % (item_code,'%Model%')
+    model_res = frappe.db.sql(model_sql, as_dict=1)
+    if len(model_res)>0:
+        # Model available
+        model_name = model_res[0].attribute_value
+        stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse='%s' and item_code like '%s' """ % (ebay_settings.warehouse,'%'+model_name+'%')
+        stock_res = frappe.db.sql(stock_sql, as_dict=1)
+        if stock_res[0] and stock_res[0].get("bal_qty"):
+            bal_qty = stock_res[0].get("bal_qty")
+        else:
+            bal_qty = 0
+        so_submitted_sql = """ select sum(soi.qty) as so_submitted_qty from `tabSales Order` so inner join `tabSales Order Item` soi on soi.parent = so.name where soi.item_code like '%s' and so.status not in ('Draft','Closed','Cancelled','Completed') """ % ('%'+model_name+'%')
+        so_submitted_res = frappe.db.sql(so_submitted_sql, as_dict=1)
+        if so_submitted_res[0] and so_submitted_res[0].get("so_submitted_qty"):
+            so_submitted_count = so_submitted_res[0].get("so_submitted_qty")
+        else:
+            so_submitted_count = 0
+        actual_qty = bal_qty - so_submitted_count
+        if actual_qty > 5:
+            actual_qty = 5  
+        #  get ebay_product_ids
+        ebay_prod_ids = []
+        if ebay_item.get("ebay_product_id"):
+            ebay_prod_ids = ebay_prod_ids + (ebay_item.get("ebay_product_id")).split(',')
+        ebay_prod_ids = ebay_prod_ids + (get_ebay_product_id_from_template(item_code).split(','))
+        if actual_qty<0:
+            actual_qty = 0
+        for ebay_product_id in ebay_prod_ids:
+            update_variant_qty_in_ebay_site(ebay_product_id,actual_qty,model_name,synced_ebay_prod_ids)
+    else:# def get_balance_qty_in_erp_for_variant_item(item_code):
+        # Model unavailable
+        match_item = frappe.db.get_value("Item", {"item_code": item_code}, "variant_of")
+        rwrite("No model found for item_code: %s" % item_code)
+        stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse='%s' and item_code like '%s' """ % (ebay_settings.warehouse,'%'+match_item+'%')
+        stock_res = frappe.db.sql(stock_sql, as_dict=1)
+        if stock_res[0] and stock_res[0].get("bal_qty"):
+            bal_qty = stock_res[0].get("bal_qty")
+        else:
+            bal_qty = 0
+        so_submitted_sql = """ select sum(soi.qty) as so_submitted_qty from `tabSales Order` so inner join `tabSales Order Item` soi on soi.parent = so.name where soi.item_code like '%s' and so.status not in ('Draft','Closed','Cancelled','Completed') """ % ('%'+match_item+'%')
+        so_submitted_res = frappe.db.sql(so_submitted_sql, as_dict=1)
+        if so_submitted_res[0] and so_submitted_res[0].get("so_submitted_qty"):
+            so_submitted_count = so_submitted_res[0].get("so_submitted_qty")
+        else:
+            so_submitted_count = 0
+        actual_qty = bal_qty - so_submitted_count
+        if actual_qty > 5:
+            actual_qty = 5  
+        #  get ebay_product_ids
+        ebay_prod_ids = []
+        if ebay_item.get("ebay_product_id"):
+            ebay_prod_ids = ebay_prod_ids + (ebay_item.get("ebay_product_id")).split(',')
+        ebay_prod_ids = ebay_prod_ids + (get_ebay_product_id_from_template(item_code).split(','))
+        if actual_qty<0:
+            actual_qty = 0
+        for ebay_product_id in ebay_prod_ids:
+            update_variant_qty_in_ebay_site(ebay_product_id,actual_qty,"",synced_ebay_prod_ids)
+    
 def sync_cancelled_ebay_orders():
     frappe.local.form_dict.count_dict["orders"] = 0
     for cancelled_ebay_order in get_cancelled_ebay_orders():
