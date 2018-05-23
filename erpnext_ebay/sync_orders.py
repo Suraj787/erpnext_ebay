@@ -119,7 +119,6 @@ def get_ebay_product_id_from_template(item_code):
     ebay_product_id_res = frappe.db.sql(ebay_product_id_sql, as_dict=1)
     for ebay_product_id_row in ebay_product_id_res:
         ebay_product_id = ebay_product_id_row.get("ebay_product_id")
-    vwrite("returing ebay_product_id: %s" % ebay_product_id)
     if not ebay_product_id:
         ebay_product_id = ""
     return ebay_product_id
@@ -189,10 +188,10 @@ def get_item_variation_specifics(item_id,qty_to_be_updated,model_name):
 
         if not has_model:
             rwrite("no model:: item_id: %s, model_name: %s" % (item_id,model_name))
-            variations.append({'Quantity':qty_to_be_updated, 'VariationSpecifics':variation.get("VariationSpecifics")})
+            variations.append({'Quantity':int(qty_to_be_updated), 'VariationSpecifics':variation.get("VariationSpecifics")})
         else:
             rwrite("has model:: item_id: %s, model_name: %s" % (item_id,model_name))
-            variations.append({'Quantity':qty_to_be_updated, 'VariationSpecifics':{'NameValueList': name_value_list}})
+            variations.append({'Quantity':int(qty_to_be_updated), 'VariationSpecifics':{'NameValueList': name_value_list}})
             
     except Exception,e:
         vwrite("Exception occurred for item_id: %s " % item_id)

@@ -7,6 +7,7 @@ from ebaysdk.finding import Connection as finding
 from ebaysdk.trading import Connection as trading
 
 from erpnext_ebay.vlog import vwrite
+from vlog import rwrite
 
 def check_api_call_limit(response):
 	"""
@@ -37,6 +38,9 @@ def get_finding_api():
                      config_file=None)
     return api
 def get_request(path,apitype,params, settings=None):
+    if path == 'ReviseFixedPriceItem':
+        rwrite("path: %s" %path)
+        rwrite("params: %s" % params)
     settings = get_ebay_settings()
     api_calls = {'trading':get_trading_api,
                  'finding':get_finding_api}
@@ -51,14 +55,23 @@ def get_request(path,apitype,params, settings=None):
         # response = api.execute('GetCategories',{})
         # response = api.execute("GetSellerList",{'EndTimeFrom':'2017-07-01T19:09:02.768Z','EndTimeTo':'2017-08-01T19:09:02.768Z'})
         response = api.execute(path,params)
+        if path == 'ReviseFixedPriceItem':
+            rwrite(response.dict())
     except ConnectionError as e:
-        vwrite("exception occured")
+        if path == 'ReviseFixedPriceItem':
+            rwrite("connection exception raised in get_request")
+            rwrite(e)
+        vwrite("connection exception occured")
         vwrite(e)
         vwrite(e.response.dict())
 	return {}
     except Exception as e:
+        if path == 'ReviseFixedPriceItem':
+            rwrite("exception raised in get_request")
+            rwrite(e)
         vwrite(e)
         vwrite(e.message)
+	return {}
     return response.dict()
 	# check_api_call_limit(r)
 	# r.raise_for_status()
