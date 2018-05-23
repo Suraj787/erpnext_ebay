@@ -108,6 +108,7 @@ def sync_ebay_qty():
                         qty_to_be_updated = 0
                     update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_ids)
         else: # for variant items
+	    #return True
             update_variant_qty_get_model(item_code,ebay_item,synced_ebay_prod_ids)
             # qty_to_be_updated = get_balance_qty_in_erp_for_variant_item(item_code)
             
@@ -138,7 +139,7 @@ def update_variant_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,model_name
         if len(params.get("Item").get("Variations").get("Variation"))>0 and len(params.get("Item").get("Variations").get("Variation")[0].get("VariationSpecifics").get("NameValueList"))>0:
             rwrite("ebaysiteparams:variant")
             rwrite(params) 
-            # reviseFixedPriceItem = get_request('ReviseFixedPriceItem','trading',params)
+            reviseFixedPriceItem = get_request('ReviseFixedPriceItem','trading',params)
             
         # time.sleep(5)
 
@@ -208,11 +209,11 @@ def update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_i
     }
     rwrite("ebaysiteparams:nonvariant")
     rwrite(params)
-    # reviseInventoryStatus = get_request('ReviseInventoryStatus','trading',params)
+    reviseInventoryStatus = get_request('ReviseInventoryStatus','trading',params)
     # time.sleep(10)
     return True
 def get_balance_qty_in_erp(item_code):
-    stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse='%s' and item_code='%s' """ % (ebay_settings.warehouse,item_code)
+    stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse like '%s' and item_code='%s' """ % (ebay_settings.warehouse[:-6]+'%',item_code)
     stock_res = frappe.db.sql(stock_sql, as_dict=1)
     if stock_res[0] and stock_res[0].get("bal_qty"):
         bal_qty = stock_res[0].get("bal_qty")
@@ -233,7 +234,7 @@ def update_variant_qty_get_model(item_code,ebay_item,synced_ebay_prod_ids):
     if len(model_res)>0:
         # Model available
         model_name = model_res[0].attribute_value
-        stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse='%s' and item_code like '%s' """ % (ebay_settings.warehouse,'%'+model_name+'%')
+        stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse like '%s' and item_code like '%s' """ % (ebay_settings.warehouse[:-6]+'%','%'+model_name+'%')
         stock_res = frappe.db.sql(stock_sql, as_dict=1)
         if stock_res[0] and stock_res[0].get("bal_qty"):
             bal_qty = stock_res[0].get("bal_qty")
@@ -261,7 +262,7 @@ def update_variant_qty_get_model(item_code,ebay_item,synced_ebay_prod_ids):
         # Model unavailable
         match_item = frappe.db.get_value("Item", {"item_code": item_code}, "variant_of")
         rwrite("No model found for item_code: %s" % item_code)
-        stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse='%s' and item_code like '%s' """ % (ebay_settings.warehouse,'%'+match_item+'%')
+        stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse like '%s' and item_code like '%s' """ % (ebay_settings.warehouse[:-6]+'%','%'+match_item+'%')
         stock_res = frappe.db.sql(stock_sql, as_dict=1)
         if stock_res[0] and stock_res[0].get("bal_qty"):
             bal_qty = stock_res[0].get("bal_qty")

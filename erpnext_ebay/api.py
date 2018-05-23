@@ -48,13 +48,17 @@ def sync_ebay_resources():
             # vwrite("sync_products end")
             # vwrite("sync_orders start")
             sync_orders()
-            # sync_ebay_qty()
+            make_ebay_log(title="Ebay Sync Completed", status="Success", method=frappe.local.form_dict.cmd,
+                             message="Updated. This should come after successful syncing ebay")
+            make_ebay_log(title="Ebay Qty Sync Queued", status="Success", method=frappe.local.form_dict.cmd,
+                             message="Quantity sync of ebay started.")
+            sync_ebay_qty()
+            make_ebay_log(title="Ebay Qty Sync Completed", status="Success", method=frappe.local.form_dict.cmd,
+                             message="Quantity sync of ebay completed.")
             # update_paisapay_id()
             # vwrite("sync_orders end")
             frappe.db.set_value("Ebay Settings", None, "last_sync_datetime", now_time)
 
-            make_ebay_log(title="Sync Completed", status="Success", method=frappe.local.form_dict.cmd,
-                             message="Updated. This should come after successful syncing")
         except Exception, e:
             if e.args[0] and hasattr(e.args[0], "startswith") and e.args[0].startswith("402"):
                 make_ebay_log(title="Ebay has suspended your account", status="Error",

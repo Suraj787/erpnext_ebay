@@ -55,6 +55,7 @@ def get_request(path,apitype,params, settings=None):
         vwrite("exception occured")
         vwrite(e)
         vwrite(e.response.dict())
+	return {}
     except Exception as e:
         vwrite(e)
         vwrite(e.message)
