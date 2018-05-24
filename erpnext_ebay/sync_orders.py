@@ -136,12 +136,12 @@ def update_variant_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,model_name
             }
         }
         if len(params.get("Item").get("Variations").get("Variation"))>0 and len(params.get("Item").get("Variations").get("Variation")[0].get("VariationSpecifics").get("NameValueList"))>0:
+            rwrite("variantvariantvariantvariant")
             rwrite("ebaysiteparams:variant")
             rwrite(params) 
             reviseFixedPriceItem = get_request('ReviseFixedPriceItem','trading',params)
             
         # time.sleep(5)
-
     # params = {
     #     'Item': {
     #         'ItemID':'183226761324',
@@ -170,32 +170,47 @@ def update_variant_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,model_name
     # time.sleep(10)
     return True
 
+def is_duplicate_object(name_value_list,name_value):
+    for ext_name_value in name_value_list:
+        if ext_name_value.get("Name")==name_value.get("Name") and ext_name_value.get("Value")==name_value.get("Value"):
+            return False
+    return True
 def get_item_variation_specifics(item_id,qty_to_be_updated,model_name):
     variations = []
-    name_value_list = []
+    rwrite("in get_item_variation_specifics")
     try:
         has_model = False
         item = get_request('GetItem','trading',{'ItemID':item_id})
         for variation in item.get("Item").get("Variations").get("Variation"):
             temp = False
+            name_value_list = []
             for name_value in variation.get("VariationSpecifics").get("NameValueList"):
                 if "Name" in name_value and name_value.get("Name")=='Choose Model':
                     has_model = True
                     if name_value.get("Value")==model_name:
+                        # if is_duplicate_object(name_value_list,name_value):
+                        #     name_value_list.append(name_value)
                         temp = True
                 if temp:
                     name_value_list.append(name_value)
+            if temp:
+                variations.append({'Quantity':int(qty_to_be_updated), 'VariationSpecifics':{'NameValueList': name_value_list}})
+                        
+                # if temp:
+                #     name_value_list.append(name_value)
 
         if not has_model:
             rwrite("no model:: item_id: %s, model_name: %s" % (item_id,model_name))
             variations.append({'Quantity':int(qty_to_be_updated), 'VariationSpecifics':variation.get("VariationSpecifics")})
-        else:
-            rwrite("has model:: item_id: %s, model_name: %s" % (item_id,model_name))
-            variations.append({'Quantity':int(qty_to_be_updated), 'VariationSpecifics':{'NameValueList': name_value_list}})
+        # else:
+        #     rwrite("has model:: item_id: %s, model_name: %s" % (item_id,model_name))
+        #     variations.append({'Quantity':int(qty_to_be_updated), 'VariationSpecifics':{'NameValueList': name_value_list}})
             
     except Exception,e:
         vwrite("Exception occurred for item_id: %s " % item_id)
         rwrite("Can't update item_id: %s with qty: %s" % (item_id,qty_to_be_updated))
+    rwrite("returning variations")
+    rwrite(variations)
     return variations
         
 def update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_ids):
@@ -204,7 +219,7 @@ def update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_i
         synced_ebay_prod_ids.append(ebay_product_id)
     
     params = {
-        'InventoryStatus': {'ItemID':ebay_product_id,'Quantity':qty_to_be_updated}
+        'InventoryStatus': {'ItemID':ebay_product_id,'Quantity':int(qty_to_be_updated)}
     }
     rwrite("ebaysiteparams:nonvariant")
     rwrite(params)
