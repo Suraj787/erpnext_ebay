@@ -88,15 +88,9 @@ def sync_ebay_orders():
                                  "OrderID"))
 
 @frappe.whitelist()
-def sync_ebay_qty():
+def sync_ebay_qty(get_request_items_store):
     synced_ebay_prod_ids = []
-    # items_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and item_code='Refurbished Lenovo Thinkpad T410 Core I5 2 GB 320 GB Black' """
     items_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and has_variants='0' """
-    # items_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and has_variants='0' and variant_of <> '' and item_code='New Samsung Panel 32 in Full HD Smart LED TV'"""
-    # Refurbished Lenovo Thinkpad-L412 - CORE I5-4 GB-160 GB
-    # Refurbished Lenovo Thinkpad-T410-2 GB-320 GB
-    # Refurbished Lenovo Thinkpad T410 Core I5 2 GB 320 GB Black
-    # New Samsung Panel 32 in Full HD Smart LED TV
     items_res = frappe.db.sql(items_sql, as_dict=1)
     for ebay_item in items_res:
         item_code = ebay_item.get("item_code")
@@ -107,10 +101,46 @@ def sync_ebay_qty():
                     if qty_to_be_updated<0:
                         qty_to_be_updated = 0
                     update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_ids)
-        else: # for variant items
-	    #return True
-            update_variant_qty_get_model(item_code,ebay_item,synced_ebay_prod_ids)
+        # else: # for variant items
+            # update_variant_qty_get_model(item_code,ebay_item,synced_ebay_prod_ids)
+            
             # qty_to_be_updated = get_balance_qty_in_erp_for_variant_item(item_code)
+    qty_sync_for_variants(synced_ebay_prod_ids,get_request_items_store)
+
+def qty_sync_for_variants(synced_ebay_prod_ids,get_request_items_store):
+    # get all variants of item_template (Refurbished Lenovo Thinkpad variants)
+    templates_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and has_variants='1' """
+    for item_template in frappe.db.sql(templates_sql, as_dict=1):
+        # get all variants item_code of the template
+        all_variants_sql = """ select item_code from tabItem where variant_of='%s' """ % item_template.get("item_code")
+        for variant_item in frappe.db.sql(all_variants_sql, as_dict=1):
+            # get the attribute value of this code that are not replaceable e.g T440, Core I5, 15" inch etc into an array
+            non_replaceable_attr_vals_sql = """ select iva.attribute_value from `tabItem Variant Attribute` iva inner join `tabItem Attribute` ia on iva.attribute = ia.attribute_name where ia.is_replacable = "0" and iva.parent = '%s'""" % variant_item.get("item_code")
+            non_replaceable_attr_vals = []
+            for nrav in frappe.db.sql(non_replaceable_attr_vals_sql, as_dict=1):
+                non_replaceable_attr_vals.append(nrav.get("attribute_value"))
+            # Create the where_string to be added in sql
+            where_string = ""
+            for attribute in non_replaceable_attr_vals:
+                where_string += " and item_code like %s " % ('\'%'+attribute+'%\'')
+            # Prepare the below query to get the balance
+            bal_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where item_code in (select distinct item_code from  `tabItem Variant Attribute` iva inner join tabItem i on i.item_code = iva.parent where i.variant_of ='%s' %s and warehouse like '%s' )""" %(item_template.get("item_code"),where_string,ebay_settings.warehouse[:-6]+'%')
+            for bal_qty in frappe.db.sql(bal_sql, as_dict=1):
+                if bal_qty.get("bal_qty"):
+                    qty_to_be_updated = bal_qty.get("bal_qty")
+                    rwrite(variant_item.get("item_code"))
+                    rwrite("Balance Qty in ERP: %s" % qty_to_be_updated)
+                else:
+                    qty_to_be_updated = 0
+                #  get ebay_product_ids
+                ebay_prod_ids = []
+                ebay_prod_ids = ebay_prod_ids + (get_ebay_product_id_from_template(variant_item.get("item_code")).split(','))
+                if qty_to_be_updated<0:
+                    qty_to_be_updated = 0
+                for ebay_product_id in ebay_prod_ids:
+                    update_variant_qty_in_ebay_site_new(ebay_product_id,qty_to_be_updated,variant_item.get("item_code"),synced_ebay_prod_ids,get_request_items_store)
+
+
             
             
 def get_ebay_product_id_from_template(item_code):
@@ -136,7 +166,6 @@ def update_variant_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,model_name
             }
         }
         if len(params.get("Item").get("Variations").get("Variation"))>0 and len(params.get("Item").get("Variations").get("Variation")[0].get("VariationSpecifics").get("NameValueList"))>0:
-            rwrite("variantvariantvariantvariant")
             rwrite("ebaysiteparams:variant")
             rwrite(params) 
             reviseFixedPriceItem = get_request('ReviseFixedPriceItem','trading',params)
@@ -170,6 +199,24 @@ def update_variant_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,model_name
     # time.sleep(10)
     return True
 
+def update_variant_qty_in_ebay_site_new(ebay_product_id,qty_to_be_updated,model_name,synced_ebay_prod_ids,get_request_items_store):
+    if ebay_product_id+model_name not in synced_ebay_prod_ids:
+        # rwrite("Updating Variant: %s, Qty: %s" %(ebay_product_id,qty_to_be_updated))
+        synced_ebay_prod_ids.append(ebay_product_id+model_name)
+        params = {
+            'Item': {
+                'ItemID':ebay_product_id,
+                'Variations': {
+                    'Variation': get_item_variation_specifics_new(ebay_product_id,qty_to_be_updated,model_name,get_request_items_store)
+                }
+            }
+        }
+        if len(params.get("Item").get("Variations").get("Variation"))>0 and len(params.get("Item").get("Variations").get("Variation")[0].get("VariationSpecifics").get("NameValueList"))>0:
+            rwrite("ebaysiteparams:variant :: calling ReviseFixedPriceItem")
+            rwrite(params) 
+            reviseFixedPriceItem = get_request('ReviseFixedPriceItem','trading',params)
+    return True
+
 def is_duplicate_object(name_value_list,name_value):
     for ext_name_value in name_value_list:
         if ext_name_value.get("Name")==name_value.get("Name") and ext_name_value.get("Value")==name_value.get("Value"):
@@ -177,7 +224,7 @@ def is_duplicate_object(name_value_list,name_value):
     return True
 def get_item_variation_specifics(item_id,qty_to_be_updated,model_name):
     variations = []
-    rwrite("in get_item_variation_specifics")
+    # rwrite("in get_item_variation_specifics")
     try:
         has_model = False
         item = get_request('GetItem','trading',{'ItemID':item_id})
@@ -208,9 +255,51 @@ def get_item_variation_specifics(item_id,qty_to_be_updated,model_name):
             
     except Exception,e:
         vwrite("Exception occurred for item_id: %s " % item_id)
+        # rwrite("Can't update item_id: %s with qty: %s" % (item_id,qty_to_be_updated))
+    # rwrite("returning variations")
+    # rwrite(variations)
+    return variations
+def check_if_attribute_matches_combination(attribute,attribute_value,combinations):
+    res = False
+    for combination in combinations:    
+        if combination.get("Name")==attribute and combination.get("Value")==attribute_value:
+            # rwrite("in check_if_attribute_matches_combination :: returning True")
+            res = True
+    return res
+def get_item_variation_specifics_new(item_id,qty_to_be_updated,model_name,get_request_items_store):
+    variations = []
+    try:
+        has_model = False
+        item_in_get_items_store = [item for item in get_request_items_store if item.get(item_id)]
+        if len(item_in_get_items_store):
+            item = item_in_get_items_store[0].get(item_id)
+        else:
+            item = get_request('GetItem','trading',{'ItemID':item_id})
+            get_request_items_store.append({item_id:item})
+        for variation in item.get("Item").get("Variations").get("Variation"):
+            temp = False
+            name_value_list = []
+            ebay_count = (variation.get("VariationSpecifics").get("NameValueList"))
+            # rwrite(variation.get("VariationSpecifics").get("NameValueList"))
+            for name_value in variation.get("VariationSpecifics").get("NameValueList"):
+                # get attributes for this model_name and compare if they are matching with combination
+                erp_attributes_sql = """ select attribute,attribute_value from `tabItem Variant Attribute` where parent='%s' """ % model_name
+                erp_count = 0
+                match = True
+                for erp_attribute in frappe.db.sql(erp_attributes_sql,as_dict=1):
+                    matches = check_if_attribute_matches_combination(erp_attribute.get("attribute"),erp_attribute.get("attribute_value"),variation.get("VariationSpecifics").get("NameValueList"))
+                    if not matches:
+                        match = False
+                if match:
+                    name_value_list.append(name_value)
+            if len(name_value_list)>0:
+                variations.append({'Quantity':int(qty_to_be_updated), 'VariationSpecifics':{'NameValueList': name_value_list}})
+    except Exception,e:
+        vwrite("Exception occurred for item_id: %s " % item_id)
         rwrite("Can't update item_id: %s with qty: %s" % (item_id,qty_to_be_updated))
-    rwrite("returning variations")
-    rwrite(variations)
+        rwrite(e.message)
+    # rwrite("returning variations")
+    # rwrite(variations)
     return variations
         
 def update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_ids):

@@ -43,20 +43,18 @@ def sync_ebay_resources():
             now_time = frappe.utils.now()
             validate_ebay_settings(ebay_settings)
             frappe.local.form_dict.count_dict = {}
-            # vwrite("Now actual sync process starts")
             # sync_products(ebay_settings.price_list, ebay_settings.warehouse)
-            # vwrite("sync_products end")
-            # vwrite("sync_orders start")
             sync_orders()
+            
             make_ebay_log(title="Ebay Sync Completed", status="Success", method=frappe.local.form_dict.cmd,
                              message="Updated. This should come after successful syncing ebay")
             make_ebay_log(title="Ebay Qty Sync Queued", status="Success", method=frappe.local.form_dict.cmd,
                              message="Quantity sync of ebay started.")
-            sync_ebay_qty()
+            get_request_items_store = []
+            sync_ebay_qty(get_request_items_store)
             make_ebay_log(title="Ebay Qty Sync Completed", status="Success", method=frappe.local.form_dict.cmd,
                              message="Quantity sync of ebay completed.")
             # update_paisapay_id()
-            # vwrite("sync_orders end")
             frappe.db.set_value("Ebay Settings", None, "last_sync_datetime", now_time)
 
         except Exception, e:
