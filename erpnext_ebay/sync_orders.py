@@ -103,7 +103,7 @@ def sync_ebay_qty(get_request_items_store):
                     if qty_to_be_updated<0:
                         qty_to_be_updated = 0
                     update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_ids,individual_qty_params)
-    #reviseInventoryStatus = get_request('ReviseInventoryStatus','trading',individual_qty_params)
+    reviseInventoryStatus = get_request('ReviseInventoryStatus','trading',{ 'InventoryStatus': individual_qty_params })
         # else: # for variant items
             # update_variant_qty_get_model(item_code,ebay_item,synced_ebay_prod_ids)
             
@@ -329,7 +329,7 @@ def update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_i
     params = {
         'InventoryStatus': {'ItemID':ebay_product_id,'Quantity':int(qty_to_be_updated)}
     }
-    individual_qty_params.append(params)
+    individual_qty_params.append({'ItemID':ebay_product_id,'Quantity':int(qty_to_be_updated)})
     rwrite("ebaysiteparams:nonvariant")
     rwrite(params)
     #reviseInventoryStatus = get_request('ReviseInventoryStatus','trading',params)

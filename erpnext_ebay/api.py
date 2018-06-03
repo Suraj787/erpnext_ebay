@@ -54,8 +54,8 @@ def sync_ebay_resources():
                              message="Quantity sync of ebay started.")
             get_request_items_store = []
             try:
-		a=1
-                #sync_ebay_qty(get_request_items_store)
+                a=1
+                # sync_ebay_qty(get_request_items_store)
             except Exception, e:
                 vwrite("loopbreak")
                 vwrite(e.message)
