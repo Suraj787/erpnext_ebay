@@ -92,7 +92,7 @@ def sync_ebay_orders():
 def sync_ebay_qty(get_request_items_store):
     synced_ebay_prod_ids = []
     individual_qty_params = []
-    items_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and has_variants='0' """
+    items_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and has_variants='0'"""
     items_res = frappe.db.sql(items_sql, as_dict=1)
     for ebay_item in items_res:
         item_code = ebay_item.get("item_code")
@@ -102,6 +102,8 @@ def sync_ebay_qty(get_request_items_store):
                 for ebay_product_id in ebay_item.get("ebay_product_id").split(','):
                     if qty_to_be_updated<0:
                         qty_to_be_updated = 0
+		    if qty_to_be_updated>5:
+			qty_to_be_updated = 5
                     update_qty_in_ebay_site(ebay_product_id,qty_to_be_updated,synced_ebay_prod_ids,individual_qty_params)
     reviseInventoryStatus = get_request('ReviseInventoryStatus','trading',{ 'InventoryStatus': individual_qty_params })
         # else: # for variant items
@@ -113,7 +115,7 @@ def sync_ebay_qty(get_request_items_store):
 
 def qty_sync_for_variants(synced_ebay_prod_ids,get_request_items_store,individual_qty_params):
     # get all variants of item_template (Refurbished Lenovo Thinkpad variants)
-    templates_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and has_variants='1' """
+    templates_sql = """ select distinct item_code,ebay_product_id,variant_of from tabItem where sync_with_ebay='1' and sync_qty_with_ebay='1' and has_variants='1' order by item_code desc """
     for item_template in frappe.db.sql(templates_sql, as_dict=1):
         # get all variants item_code of the template
         all_variants_sql = """ select item_code from tabItem where variant_of='%s' """ % item_template.get("item_code")
@@ -143,6 +145,8 @@ def qty_sync_for_variants(synced_ebay_prod_ids,get_request_items_store,individua
                 ebay_prod_ids = ebay_prod_ids + (get_ebay_product_id_from_template(variant_item.get("item_code")).split(','))
                 if qty_to_be_updated<0:
                     qty_to_be_updated = 0
+		if qty_to_be_updated>5:
+		    qty_to_be_updated = 5
                 for ebay_product_id in ebay_prod_ids:
                     update_variant_qty_in_ebay_site_new(ebay_product_id,qty_to_be_updated,variant_item.get("item_code"),synced_ebay_prod_ids,get_request_items_store)
                 ebay_prod_id_sql = """ select ebay_product_id from tabItem where item_code='%s' """ % variant_item.get("item_code")

@@ -13,7 +13,7 @@ from .ebay_lead_management import lead_status_modifier
 
 @frappe.whitelist()
 def sync_ebay():
-    enqueue("erpnext_ebay.api.init_feedback_requests", queue='long')
+    #enqueue("erpnext_ebay.api.init_feedback_requests", queue='long')
     enqueue("erpnext_ebay.api.sync_ebay_resources", queue='long')
     # enqueue("erpnext_ebay.api.init_ebay_lead_management", queue='long')
     frappe.msgprint(_("Queued for syncing. It may take a few minutes to an hour if this is your first sync."))
@@ -55,7 +55,7 @@ def sync_ebay_resources():
             get_request_items_store = []
             try:
                 a=1
-                # sync_ebay_qty(get_request_items_store)
+                #sync_ebay_qty(get_request_items_store)
             except Exception, e:
                 vwrite("loopbreak")
                 vwrite(e.message)

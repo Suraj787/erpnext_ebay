@@ -88,9 +88,9 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 scheduler_events = {
-	"hourly": [
-		"erpnext_ebay.api.sync_ebay"
-	]
+#	"hourly": [
+#		"erpnext_ebay.api.sync_ebay"
+#	]
 }
 # scheduler_events = {
 # 	"all": [
