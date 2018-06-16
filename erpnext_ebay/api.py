@@ -3,7 +3,7 @@ import frappe
 from frappe import _
 from .exceptions import EbayError
 from .sync_products import sync_products
-from .sync_orders import sync_orders,sync_ebay_qty,update_paisapay_id
+from .sync_orders import sync_orders,sync_ebay_qty_new,update_paisapay_id
 from .utils import disable_ebay_sync_on_exception, make_ebay_log
 from frappe.utils.background_jobs import enqueue
 from erpnext_ebay.vlog import vwrite
