@@ -1,6 +1,7 @@
 import datetime
 def vwrite(contenttowrite):
-    target = open("vebaylogfile.txt", 'a+')
+    file_name = "vebaylogfile_%s.txt" % datetime.datetime.now().date()
+    target = open(file_name, 'a+')
     target.write("\n==========================="+str(datetime.datetime.now())+"===========================\n")
     target.write("\n"+str(contenttowrite)+"\n")
     target.close()

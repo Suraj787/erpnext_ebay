@@ -204,6 +204,14 @@ def qty_sync_for_variants(synced_ebay_prod_ids,get_request_items_store,individua
                     qty_to_be_updated = 0
                     # rwrite(variant_item.get("item_code"))
                     # rwrite(" else Balance Qty in ERP: %s" % qty_to_be_updated)
+                # excluding Sales Orders (Draft & Submitted)
+                so_submitted_sql = """ select sum(soi.qty) as so_submitted_qty from `tabSales Order` so inner join `tabSales Order Item` soi on soi.parent = so.name where soi.item_code='%s' and so.status not in ('Closed','Cancelled','Completed') """ % item_template.get("item_code")
+                so_submitted_res = frappe.db.sql(so_submitted_sql, as_dict=1)
+                if so_submitted_res[0] and so_submitted_res[0].get("so_submitted_qty"):
+                    so_submitted_count = so_submitted_res[0].get("so_submitted_qty")
+                else:
+                    so_submitted_count = 0
+                qty_to_be_updated = qty_to_be_updated - so_submitted_count
                 #  get ebay_product_ids
                 ebay_prod_ids = []
                 ebay_prod_ids = ebay_prod_ids + (get_ebay_product_id_from_template(variant_item.get("item_code")).split(','))
@@ -618,6 +626,13 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
             so.update({
                 "customer_address": ebay_order.get("ShippingAddress").get("Name")+"-Shipping",
                 "shipping_address_name":ebay_order.get("ShippingAddress").get("Name")+"-Shipping"
+            })
+            if not ebay_order.get("ShippingAddress").get("Phone"):
+                phone = "NA"
+            else:
+                phone = ebay_order.get("ShippingAddress").get("Phone")
+            so.update({
+                "contact_mobile": phone
             })
             if company:
                 so.update({
