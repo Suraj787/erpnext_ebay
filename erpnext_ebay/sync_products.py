@@ -248,7 +248,7 @@ def sync_item_with_ebay(item, price_list, warehouse):
             "ListingDuration":"GTC",
             "ListingType":"FixedPriceItem",
             "PaymentMethods":["PaisaPayEscrow","PaisaPayEscrowEMI","COD"],
-            # "PayPalEmailAddress":"seller@usedyetnew.com",
+            # "PayPalEmailAddress":"seller@newjaisa.com",
             "PictureDetails":{
                 "PictureURL":item_images_obj
             },

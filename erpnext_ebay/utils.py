@@ -76,12 +76,12 @@ def get_message_body_from_code(message_body_code,message_body_params={}):
             
             Following are the value added services that we also Provide:
             
-            1. To get wall Mount with the TV itself please purchase it here(https://www.usedyetnew.com/search?q=wall+mount) as per the size of the TV.
+            1. To get wall Mount with the TV itself please purchase it here(https://www.newjaisa.com/search?q=wall+mount) as per the size of the TV.
             2. Extended Warranty Support: 
                We are Delighted to introduce Extended Warranty for our Esteemed Customers at 25% discount if bought before shipping. Check the links Below to Purchase the Same.
             3. You will receive a separate Invoice with Warranty with Original Product invoice mentioned in Same!
-                1 Year Extended Warranty (https://www.usedyetnew.com/search?q=1+Year+extended+warranty)
-                2 Years Extended Warranty (https://www.usedyetnew.com/search?q=2+Year+extended+warranty)
+                1 Year Extended Warranty (https://www.newjaisa.com/search?q=1+Year+extended+warranty)
+                2 Years Extended Warranty (https://www.newjaisa.com/search?q=2+Year+extended+warranty)
             
             Following Are the key Points that I will like to bring to your Notice:
 
@@ -171,7 +171,7 @@ def send_ebay_m2m_message(itemid,subject,message_body_code,recipient,message_bod
         if isinstance(a, basestring):
             attach = frappe.db.get_value("File", {"name": a},
                                          ["file_name", "file_url", "is_private"], as_dict=1)
-            uploaded_image_url = upload_image_to_ebay('http://www.usedyetnew.com'+attach.get("file_url"))
+            uploaded_image_url = upload_image_to_ebay('http://www.newjaisa.com'+attach.get("file_url"))
             uploaded_images.append({'uploaded_image_url':uploaded_image_url,'uploaded_image_name':attach.get("file_name")})
     if not message_body:
         message_body = get_message_body_from_code(message_body_code,message_body_params)
