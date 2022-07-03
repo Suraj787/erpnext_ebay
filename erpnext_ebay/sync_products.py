@@ -171,7 +171,7 @@ def sync_erpnext_items(price_list, warehouse, ebay_item_list,critical_ebay_listi
                 make_ebay_log(title=e.message, status="Error", method="sync_ebay_items",
                                  message=frappe.get_traceback(),
                                  request_data=item, exception=True)
-            except Exception, e:
+            except Exception as e:
                 make_ebay_log(title=e.message, status="Error", method="sync_ebay_items",
                                  message=frappe.get_traceback(),
                                  request_data=item, exception=True)

@@ -108,7 +108,7 @@ def get_ebay_claimed_buyer_ids():
         """ % str(datetime.now() + timedelta(days=-60))
     try:
         claims = frappe.db.sql(delivery_note_list, as_dict=1)
-    except Exception, e:
+    except Exception as e:
         vwrite("Exception raised in get_ebay_claimed_buyer_ids")
         vwrite(e.message)
     

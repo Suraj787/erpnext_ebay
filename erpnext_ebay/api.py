@@ -56,7 +56,7 @@ def sync_ebay_resources():
             try:
                 a=1
                 #sync_ebay_qty(get_request_items_store)
-            except Exception, e:
+            except Exception as e:
                 vwrite("loopbreak")
                 vwrite(e.message)
             make_ebay_log(title="Ebay Qty Sync Completed", status="Success", method=frappe.local.form_dict.cmd,
@@ -64,7 +64,7 @@ def sync_ebay_resources():
             # update_paisapay_id()
             frappe.db.set_value("Ebay Settings", None, "last_sync_datetime", now_time)
 
-        except Exception, e:
+        except Exception as e:
             if e.args[0] and hasattr(e.args[0], "startswith") and e.args[0].startswith("402"):
                 make_ebay_log(title="Ebay has suspended your account", status="Error",
                                  method="sync_ebay_resources", message=_("""Ebay has suspended your account till
@@ -92,5 +92,5 @@ def validate_ebay_settings(ebay_settings):
 	"""
 	try:
 		ebay_settings.save()
-	except Exception, e:
+	except Exception as e:
 		disable_ebay_sync_on_exception()

@@ -45,7 +45,7 @@ def create_customer(ebay_order, ebay_customer_list):
 		frappe.db.commit()
 
 			
-	except Exception, e:
+	except Exception as e:
 		vwrite("Exception raised in create_customer")
 		vwrite(e.message)
 		vwrite(ebay_order)
@@ -114,7 +114,7 @@ def create_customer_address(ebay_order, ebay_customer):
 					   ebay_order.get("ShippingAddress").get("AddressID")))
 				frappe.db.commit()
 
-		except Exception, e:
+		except Exception as e:
 			vwrite('Exception raised in create_customer_address')
 			vwrite(e.message)
 			vwrite(ebay_order)
@@ -158,7 +158,7 @@ def create_customer_contact(ebay_order, ebay_customer):
 			# 			"link_name": ebay_order.get("ShippingAddress").get("Name")
 			# 		}]
 			# 	}).save()
-		except Exception, e:
+		except Exception as e:
 			vwrite("Exception raised in create_customer_contact")
 			vwrite(e.message)
 			vwrite(ebay_order)
@@ -199,7 +199,7 @@ def sync_erpnext_customers(shopify_customer_list):
 			
 			frappe.local.form_dict.count_dict["customers"] += 1
 			frappe.db.commit()
-		except Exception, e:
+		except Exception as e:
 			make_ebay_log(title=e.message, status="Error", method="sync_erpnext_customers", message=frappe.get_traceback(),
 				request_data=customer, exception=True)
 

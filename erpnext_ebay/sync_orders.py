@@ -72,7 +72,7 @@ def sync_ebay_orders():
                     vwrite(ebay_order)
                     make_ebay_log(status="Error", method="sync_ebay_orders", message=frappe.get_traceback(),
                                      request_data=ebay_order.get("OrderID"), exception=True)
-                except Exception, e:
+                except Exception as e:
                     vwrite("Exception raised in create_order")
                     vwrite(e)
                     vwrite(ebay_order)
@@ -252,7 +252,7 @@ def qty_sync_for_variants(synced_ebay_prod_ids,get_request_items_store,individua
                             if unified_param.get("Item") and len(unified_param.get("Item").get("Variations").get("Variation"))>0:
                                 unified_params[l]["Item"]["Variations"]["Variation"] = filter(None,unified_params[l].get("Item").get("Variations").get("Variation"))
                             l = l+1
-                    except Exception,e:
+                    except Exception as e:
                         print "Exception"
                         print e
                         print e.message
@@ -400,7 +400,7 @@ def get_item_variation_specifics(item_id,qty_to_be_updated,model_name):
         #     rwrite("has model:: item_id: %s, model_name: %s" % (item_id,model_name))
         #     variations.append({'Quantity':int(qty_to_be_updated), 'VariationSpecifics':{'NameValueList': name_value_list}})
             
-    except Exception,e:
+    except Exception as e:
         vwrite("Exception occurred for item_id: %s " % item_id)
         # rwrite("Can't update item_id: %s with qty: %s" % (item_id,qty_to_be_updated))
     # rwrite("returning variations")
@@ -452,7 +452,7 @@ def get_item_variation_specifics_new(item_id,qty_to_be_updated,model_name,get_re
                 variations.append({'Quantity':int(qty_to_be_updated), 'VariationSpecifics':{'NameValueList': name_value_list}})
         for_variation_end = datetime.now()
         print_duration("for_variation_duration",for_variation_start,for_variation_end)
-    except Exception,e:
+    except Exception as e:
         vwrite("Exception occurred for item_id: %s " % item_id)
         rwrite("Can't update item_id: %s with qty: %s" % (item_id,qty_to_be_updated))
         rwrite(e.message)
@@ -652,7 +652,7 @@ def create_sales_order(ebay_order, ebay_settings, company=None):
             vwrite(ebay_order)
             make_ebay_log(title=e.message, status="Error", method="create_sales_order", message=frappe.get_traceback(),
                           request_data=ebay_order.get("OrderID"), exception=True)
-        except Exception, e:
+        except Exception as e:
             vwrite("Exception raised in create_sales_order")
             vwrite(e)
             vwrite(ebay_order)
